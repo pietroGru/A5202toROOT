@@ -22,13 +22,15 @@ procTXT = []
 daqStartTime = datetime.now()
 rFilename = daqStartTime.strftime("%d%H%M%S_") + f"FERS_run{runID}.root"
 #
-procROOTList = "runList.dat"
+procROOTList = "/home/pietro/work/CLEAR_Vesper/FERS/runList.dat"
 # List of ROOT files processed in this session
 txtProcessedSession = []
 # Path where FERS data files are located 
-a5202dataDir = "/home/pietro/dataNfs/CLEAR_March/FERS/data/30mar23/"
+a5202dataDir = "/home/pietro/work/CLEAR_Vesper/FERS/data/"
+#a5202dataDir = "/home/pietro/work/CLEAR_Vesper/FERS/data/230508/pid22096_disconnected/"
 # Path where output ROOT files are located
-outputROOTdirectory = "/home/pietro/work/CLEAR_March/FERS/clear/processed/30mar23/"
+outputROOTdirectory = "/home/pietro/work/CLEAR_Vesper/FERS/processed/"
+#outputROOTdirectory = "/home/pietro/work/CLEAR_Vesper/FERS/processed/230508/pid22096_disconnected/"
 
 exitCall = False        # Boolean signalling exit interrupt call
 writingROOT = False     # ROOT writing status
@@ -39,7 +41,7 @@ writingROOT = False     # ROOT writing status
 ######## runCache ############################################
 ##############################################################
 # Check cache about the list of already processed FERS datafiles (to ROOT)
-def checkCache(cache_fname = "/home/pietro/work/CLEAR_March/FERS/clear/cache_fers.dat"):
+def checkCache(cache_fname = "/home/pietro/work/CLEAR_Vesper/FERS/cache_fers.dat"):
     runID = 0
     eventID = 0
     procROOT = []
@@ -58,7 +60,7 @@ def checkCache(cache_fname = "/home/pietro/work/CLEAR_March/FERS/clear/cache_fer
 
 # Save cache file
 dumpCacheRunStatus = False
-def dumpCache(cache_fname = "/home/pietro/work/CLEAR_March/FERS/clear/cache_fers.dat"):
+def dumpCache(cache_fname = "/home/pietro/work/CLEAR_Vesper/FERS/cache_fers.dat"):
     global dumpCacheRunStatus
     if dumpCacheRunStatus:
         return
@@ -126,7 +128,7 @@ def infoFilename(fname: str):
 # (b) print the summary of the processed FERS run since the beginning
 # (c) gracefully exit
 def exitRoutine():
-    dumpCache()
+    #dumpCache()
     exit(0)
 #
 # Exit signal interrupt handler function
@@ -189,9 +191,5 @@ def convertLoop():
 producer_thread = threading.Thread(target=convertLoop)
 # start the producer thread
 producer_thread.start()
-
-
-
-
+# Wait for the produced to finish
 producer_thread.join()
-exit()

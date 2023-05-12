@@ -77,7 +77,7 @@ class rootconverter():
         runTime = self.startTime
         trgTime = runTime + np.double(data_new[0]*1e-6)
         if self.rFileOpen:
-            (self.rfile).FERS_fill(self.runID, runTime, event, trgTime, data_new[1], data_new[0], data_new[2], data_new[3], data_new[4], data_new[5], data_new[2], FERStoStrip_single[data_new[3]], 0, 0)
+            (self.rfile).FERS_fill(self.runID, runTime, event, trgTime, data_new[1], data_new[0], data_new[2], data_new[3], data_new[4], data_new[5], data_new[2], FERStoStrip_singleREVERSE[data_new[3]], 0, 0)
             #self.runDataTree.Fill(self.runID, runTime, event, data_new[0], data_new[1], data_new[2], data_new[3], data_new[4], data_new[5], trgTime)
         return data_new
 
@@ -163,9 +163,9 @@ class rootconverter():
                                 month=int(line[15:17]),
                                 year=int(line[18:22]),
                                 hour=int(line[23:25]),
-                                minute=int(line[26:28]),
-                                second=int(line[29:31])
+                                minute=int(line[26:28])
                             )
+                            if len(line) >29: startTime.second = int(line[29:31])
                             self.startTime = startTime.timestamp()
                         else:
                             # New date format
@@ -179,9 +179,9 @@ class rootconverter():
                                 month=int(line[15:17]),
                                 year=int(line[18:22]),
                                 hour=int(line[23:25]),
-                                minute=int(line[26:28]),
-                                second=int(line[29:31])
+                                minute=int(line[26:28])
                             )
+                            if len(line) >29: stopTime.second = int(line[29:31])
                             self.stopTime = stopTime.timestamp()
                         else:
                             # New date format
@@ -190,7 +190,11 @@ class rootconverter():
                     if elapPos != -1:
                         elapsedTime_us = line[elapPos+15:line.find(' us', elapPos)]
                         #logging.debug(f"|{elapsedTime_us}|")
-                        self.elapsedTime = float(elapsedTime_us)
+                        try:
+                            self.elapsedTime = float(elapsedTime_us)
+                        except ValueError:
+                            self.elapsedTime = 0
+                            logging.error(f"Unable to determine elapsed time for line: {line}")
                         #logging.debug(self.startTime, self.stopTime, self.elapsedTime)
                 if i>6:
                     break
@@ -215,14 +219,11 @@ class rootconverter():
             self.rfile.FERSsetup_fill()
             # Store run datapoints in ROOT
             with open(self.fname_list, 'r') as infile:
-                for j, line in enumerate(infile):
-                    if j<9:
-                        if j==4:
+                for i, line in enumerate(infile):
+                    if i<9:
+                        if i==4:
                             self.histoCh = self.parseEnergyHistoCh(line)
                     else:
-                        #if(self.fname_list=='/home/pietro/dataNfs/CLEAR_March/FERS/data/28mar23/Run29_list.txt'):
-                        #    print(j, self.fname, line)
-                        #    #input()
                         self.parseLineData_toROOT(line)
             # Close the ROOT file
             self.closeROOT()
@@ -233,6 +234,7 @@ class rootconverter():
 ##############################################################
 ######## / rootconverter class ###############################
 ##############################################################
+
 
 
 
@@ -313,74 +315,6 @@ FERStoStrip_single = {
     62 :  126,
     63 :  128
 }
-
-FERStoStrip_singleREVERSE = {
-    0   :   65,
-    1   :   67,
-    2   :   69,
-    3   :   71,
-    4   :   73,
-    5   :   75,
-    6   :   77,
-    7   :   79,
-    8   :   81,
-    9   :   83,
-    10  :   85,
-    11  :   87,
-    12  :   89,
-    13  :   91,
-    14  :   93,
-    15  :   95,
-    16  :   97,
-    17  :   99,
-    18  :   101,
-    19  :   103,
-    20  :   105,
-    21  :   107,
-    22  :   109,
-    23  :   111,
-    24  :   113,
-    25  :   115,
-    26  :   117,
-    27  :   119,
-    28  :   121,
-    29  :   123,
-    30  :   125,
-    31  :   127,
-    32  :   66,
-    33  :   68,
-    34  :   70,
-    35  :   72,
-    36  :   74,
-    37  :   76,
-    38  :   78,
-    39  :   80,
-    40  :   82,
-    41  :   84,
-    42  :   86,
-    43  :   88,
-    44  :   90,
-    45  :   92,
-    46  :   94,
-    47  :   96,
-    48  :   98,
-    49  :   100,
-    50  :   102,
-    51  :   104,
-    52  :   106,
-    53  :   108,
-    54  :   110,
-    55  :   112,
-    56  :   114,
-    57  :   116,
-    58  :   118,
-    59  :   120,
-    60  :   122,
-    61  :   124,
-    62  :   126,
-    63  :   128
-}
 ##############################################################
 ######## / FERS A5202 to sensor ch. map ######################
 ##############################################################
-
