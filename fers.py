@@ -22,26 +22,37 @@ procTXT = []
 daqStartTime = datetime.now()
 rFilename = daqStartTime.strftime("%d%H%M%S_") + f"FERS_run{runID}.root"
 #
-procROOTList = "/home/pietro/work/CLEAR_Vesper/FERS/runList.dat"
+procROOTList = "/home/pietro/work/CLEAR_March/FERS/TB4-192_FERS/runList.dat"
 # List of ROOT files processed in this session
 txtProcessedSession = []
 # Path where FERS data files are located 
-a5202dataDir = "/home/pietro/work/CLEAR_Vesper/FERS/data/"
-#a5202dataDir = "/home/pietro/work/CLEAR_Vesper/FERS/data/230508/pid22096_disconnected/"
+a5202dataDir = "/home/pietro/clearDaq/CLEAR_Vesper/FERS/data/nightly/"
 # Path where output ROOT files are located
-outputROOTdirectory = "/home/pietro/work/CLEAR_Vesper/FERS/processed/"
-#outputROOTdirectory = "/home/pietro/work/CLEAR_Vesper/FERS/processed/230508/pid22096_disconnected/"
+outputROOTdirectory = "/home/pietro/work/CLEAR_March/FERS/processed/nightly/"
 
-exitCall = False        # Boolean signalling exit interrupt call
-writingROOT = False     # ROOT writing status
-
+exitCall = False                # Boolean signalling exit interrupt call
+writingROOT = False             # ROOT writing status
+dumpCacheRunStatus = False      # Cache dump status
 
 
 ##############################################################
-######## runCache ############################################
+######## Cache utilites ######################################
 ##############################################################
-# Check cache about the list of already processed FERS datafiles (to ROOT)
-def checkCache(cache_fname = "/home/pietro/work/CLEAR_Vesper/FERS/cache_fers.dat"):
+def checkCache(cache_fname: str):
+    """
+    Check the cache-file containing information about the list of already processed (converted to ROOT) FERS datafiles
+    
+    Parameters
+    ----------
+        cache_fname (str): Path of the cache file
+        
+    Returns:
+    --------    
+        runID (int): Run number of the last processed FERS datafile
+        eventID (int): Event number of the last processed FERS datafile
+        procROOT (list): List of the processed FERS datafiles
+    """
+    
     runID = 0
     eventID = 0
     procROOT = []
@@ -58,10 +69,20 @@ def checkCache(cache_fname = "/home/pietro/work/CLEAR_Vesper/FERS/cache_fers.dat
         logging.warning(f"No cache present.")
     return (runID, eventID, procROOT)
 
-# Save cache file
-dumpCacheRunStatus = False
-def dumpCache(cache_fname = "/home/pietro/work/CLEAR_Vesper/FERS/cache_fers.dat"):
-    global dumpCacheRunStatus
+
+def dumpCache(cache_fname: str, dumpCacheRunStatus: bool):
+    """
+    Dump the cache-file containing information about the list of already processed (converted to ROOT) FERS datafiles
+    
+    Parameters
+    ----------
+        cache_fname (str): Path of the cache file
+        
+    Returns:
+    --------
+        None
+    """    
+    
     if dumpCacheRunStatus:
         return
     else:
@@ -87,11 +108,14 @@ def dumpCache(cache_fname = "/home/pietro/work/CLEAR_Vesper/FERS/cache_fers.dat"
             logging.info(f"{i} : {_extractFilename(item)}")
         logging.info("--------------------------------------")
         # Greetings
-        logging.critical("Goodbye :)")
+        logging_status("Goodbye :)\n")
+        
+        
+        
+
+            
         dumpCacheRunStatus = True
 
-# Check cache for the FERS run converted in previous executions
-runID, eventID, procTXT = checkCache()
 
 
 
@@ -105,6 +129,7 @@ def makeROOT(fname):
     exampleClass = rootconverter(fname, outputROOTdirectory)
     exampleClass.convert()
 
+
 # Get run filename without extentions from the path like.
 # For example: _extractFilename(/home/pietro/work/CLEAR_March/FERS/Janus_3.0.3/bin/MsgLog.txt) -> MsgLog.txt
 def _extractFilename(path: str):
@@ -117,61 +142,69 @@ def _extractFilename(path: str):
 
 # Get the data filename and return the info filename
 # Run1_list.txt -> Run1_Info.txt)
-def infoFilename(fname: str):
+def _infoFilename(fname: str):
     return fname.replace("_list.txt", "_Info.txt")
 
 
 
 
-# Exit routine function:
-# (a) save list of processed FERS runs for future execution of this program
-# (b) print the summary of the processed FERS run since the beginning
-# (c) gracefully exit
-def exitRoutine():
-    #dumpCache()
+
+def exitRoutine() -> None: 
+    """
+    Exit routine function:
+    1. Save list of processed FERS runs for future execution of this program.
+    2. Print the summary of the processed FERS run since the beginning.
+    3. Gracefully exit.
+    """
+    dumpCache(procROOTList, dumpCacheRunStatus)
+    # Wait for the produced to finish
     exit(0)
-#
-# Exit signal interrupt handler function
-def handler_SIGINT(signum, frame):
+    
+ 
+# Interrupt signal handler function
+def handler_SIGINT(signum: signal.Signals, frame) -> None:
+    """
+    Exit signal interrupt handler function
+    """ 
     global exitCall
     exitCall = True
-    print(); logging.critical("Interrupt signal.")
+    print(); logging.critical("Interrupt signal from main thread")
     if writingROOT:
-        logging.warning("ROOT write running. Waiting...")
+        logging.warning("ROOT write pending. Waiting for completion...")
     else:
-        print("from interrupt")
         exitRoutine()
-# Register the interrupt handler
-signal.signal(signal.SIGINT, handler_SIGINT)
-
 
 
 
 # Main conversion loop of txt files to ROOT
 def convertLoop():
+    """
+    Main conversion loop of txt files from Janus to ROOT
+    """
+    
     global writingROOT
     aux_firstPrint = True
     # Main loop
     logging.info("Starting main loop")
     while True:
+        # Handle SIGTERM interrupt in case the signal is called during ROOT file writing
+        if exitCall:
+            return
+        
         # Get the list of files in the directory
         runList_new = glob.glob(a5202dataDir+"Run*_list.txt")
         infoList = glob.glob(a5202dataDir+"Run*_Info.txt")
         # Loop over the list of Run*_list file in the dir,
         # compare with the previously processed ROOT and eventually
-        # process any new file
+        # process any new file        
         for item in runList_new:
-            # Handle SIGTERM interrupt in case the signal is called during ROOT file writing
-            if exitCall:
-                print("from convertLoop")
-                exitRoutine()
             # If the run is not among those already processed
             if (item not in procTXT):
                 if aux_firstPrint:
                     logging.warning(f"New item {_extractFilename(item)} found. Waiting for closure")
                     aux_firstPrint = False
                 #
-                if (infoFilename(item) in infoList):
+                if (_infoFilename(item) in infoList):
                     writingROOT = True
                     aux_firstPrint = True
 
@@ -184,12 +217,22 @@ def convertLoop():
                     writingROOT = False
                     #
                     logging.info(f"Run {_extractFilename(item)[:-4]}.root OK")
-        time.sleep(2) # To reduce CPU load
+            
+        # To reduce CPU load
+        time.sleep(2)
 
 
-# Create the DT5730 readout thread
-producer_thread = threading.Thread(target=convertLoop)
-# start the producer thread
-producer_thread.start()
-# Wait for the produced to finish
-producer_thread.join()
+
+
+if __name__ == "__main__":
+    # Check cache for the FERS run converted in previous executions
+    runID, eventID, procTXT = checkCache(procROOTList)
+    # Register the interrupt handler
+    signal.signal(signal.SIGINT, handler_SIGINT)
+    # Create the DT5730 readout thread
+    producer_thread = threading.Thread(target=convertLoop)
+    #producer_thread.daemon = True
+    # start the producer thread
+    producer_thread.start()
+    # Wait for the produced to finish
+    producer_thread.join()
