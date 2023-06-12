@@ -77,7 +77,7 @@ class rootconverter():
         runTime = self.startTime
         trgTime = runTime + np.double(data_new[0]*1e-6)
         if self.rFileOpen:
-            (self.rfile).FERS_fill(self.runID, runTime, event, trgTime, data_new[1], data_new[0], data_new[2], data_new[3], data_new[4], data_new[5], data_new[2], FERStoStrip_singleREVERSE[data_new[3]], 0, 0)
+            (self.rfile).FERS_fill(self.runID, runTime, event, trgTime, data_new[1], data_new[0], data_new[2], data_new[3], data_new[4], data_new[5], data_new[2], FERStoStrip_single[data_new[3]], 0, 0)
             #self.runDataTree.Fill(self.runID, runTime, event, data_new[0], data_new[1], data_new[2], data_new[3], data_new[4], data_new[5], trgTime)
         return data_new
 
