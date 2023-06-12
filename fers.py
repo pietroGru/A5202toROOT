@@ -108,12 +108,8 @@ def dumpCache(cache_fname: str, dumpCacheRunStatus: bool):
             logging.info(f"{i} : {_extractFilename(item)}")
         logging.info("--------------------------------------")
         # Greetings
-        logging_status("Goodbye :)\n")
-        
-        
-        
+        logging.status("Goodbye :)\n")
 
-            
         dumpCacheRunStatus = True
 
 
