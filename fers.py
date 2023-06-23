@@ -26,9 +26,9 @@ procROOTList = "/home/pietro/work/CLEAR_March/FERS/TB4-192_FERS/runList.dat"
 # List of ROOT files processed in this session
 txtProcessedSession = []
 # Path where FERS data files are located 
-a5202dataDir = "/home/pietro/clearDaq/CLEAR_Vesper/FERS/data/nightly/"
+a5202dataDir = "/home/pietro/cleardaq/CLEAR_Vesper/FERS/data/230621/"
 # Path where output ROOT files are located
-outputROOTdirectory = "/home/pietro/work/CLEAR_March/FERS/processed/nightly/"
+outputROOTdirectory = "/home/pietro/work/CLEAR_March/FERS/processed/230621/"
 
 exitCall = False                # Boolean signalling exit interrupt call
 writingROOT = False             # ROOT writing status
