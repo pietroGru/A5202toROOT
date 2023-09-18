@@ -7,7 +7,7 @@ from logger import *
 from rootconverter import *
 from datetime import datetime
 import threading
-
+from sys import argv as CLIargs
 
 ##############################################################
 ######## globals #############################################
@@ -22,7 +22,7 @@ procTXT = []
 daqStartTime = datetime.now()
 rFilename = daqStartTime.strftime("%d%H%M%S_") + f"FERS_run{runID}.root"
 #
-procROOTList = "/home/pietro/work/CLEAR_March/FERS/TB4-192_FERS/runList.dat"
+procROOTList = "runList.dat"
 # List of ROOT files processed in this session
 txtProcessedSession = []
 # Path where FERS data files are located 
@@ -32,13 +32,14 @@ outputROOTdirectory = "/home/pietro/work/CLEAR_Vesper/FERS/processed_vec/230718/
 
 exitCall = False                # Boolean signalling exit interrupt call
 writingROOT = False             # ROOT writing status
-dumpCacheRunStatus = False      # Cache dump status
+dumpCacheRun = False            # Cache dump mode (True = dump cache, False = do not dump cache)
 
 
 ##############################################################
 ######## Cache utilites ######################################
 ##############################################################
-def checkCache(cache_fname: str):
+# Check the cache-file containing information about the list of already processed (converted to ROOT) FERS datafiles
+def checkCache(cache_fname: str) -> tuple:
     """
     Check the cache-file containing information about the list of already processed (converted to ROOT) FERS datafiles
     
@@ -70,7 +71,8 @@ def checkCache(cache_fname: str):
     return (runID, eventID, procROOT)
 
 
-def dumpCache(cache_fname: str, dumpCacheRunStatus: bool):
+# Dump the cache-file containing information about the list of already processed (converted to ROOT) FERS datafiles
+def dumpCache(cache_fname: str) -> None:
     """
     Dump the cache-file containing information about the list of already processed (converted to ROOT) FERS datafiles
     
@@ -81,36 +83,31 @@ def dumpCache(cache_fname: str, dumpCacheRunStatus: bool):
     Returns:
     --------
         None
-    """    
+    """
     
-    if dumpCacheRunStatus:
-        return
-    else:
-        # Get run filename without extentions from the path like.
-        # For example: _extractFilename(/home/pietro/work/CLEAR_March/FERS/Janus_3.0.3/bin/MsgLog.txt) -> MsgLog.txt
-        def _extractFilename(path: str):
-            idx = path.rfind('/')
-            if idx > 0 :
-                return path[idx+1:] 
-            else:
-                return path
-        #   
-        # Save runList of the processed ROOT files on file
-        with open(cache_fname, 'wb') as outfile:
-            # Read back payload from file
-            payload = [runID, eventID, procTXT]
-            pickle.dump(payload, outfile)
-            logging.info(f"[dumpCache] File {cache_fname} saved : OK")
-        # Print stats of the converted ROOT files
-        logging.info("--------------------------------------")
-        logging.info("Summary of the files converted to ROOT in this session")
-        for i, item in enumerate(txtProcessedSession):
-            logging.info(f"{i} : {_extractFilename(item)}")
-        logging.info("--------------------------------------")
-        # Greetings
-        logging.status("Goodbye :)\n")
-
-        dumpCacheRunStatus = True
+    # Get run filename without extentions from the path like.
+    # For example: _extractFilename(/home/pietro/work/CLEAR_March/FERS/Janus_3.0.3/bin/MsgLog.txt) -> MsgLog.txt
+    def _extractFilename(path: str):
+        idx = path.rfind('/')
+        if idx > 0 :
+            return path[idx+1:] 
+        else:
+            return path
+    #   
+    # Save runList of the processed ROOT files on file
+    with open(cache_fname, 'wb') as outfile:
+        # Read back payload from file
+        payload = [runID, eventID, procTXT]
+        pickle.dump(payload, outfile)
+        logging.info(f"[dumpCache] File {cache_fname} saved : OK")
+    # Print stats of the converted ROOT files
+    logging.info("--------------------------------------")
+    logging.info("Summary of the files converted to ROOT in this session")
+    for i, item in enumerate(txtProcessedSession):
+        logging.info(f"{i} : {_extractFilename(item)}")
+    logging.info("--------------------------------------")
+    # Greetings
+    logging.status("Goodbye :)\n")
 
 
 
@@ -120,7 +117,7 @@ def dumpCache(cache_fname: str, dumpCacheRunStatus: bool):
 ######## Aux functions #######################################
 ##############################################################
 # Convert a FERS file to ROOT
-def makeROOT(fname):
+def makeROOT(fname) -> None:
     logging.debug(f"makeROOT - Filename: {fname}")
     exampleClass = rootconverter(fname, outputROOTdirectory)
     exampleClass.convert()
@@ -128,7 +125,7 @@ def makeROOT(fname):
 
 # Get run filename without extentions from the path like.
 # For example: _extractFilename(/home/pietro/work/CLEAR_March/FERS/Janus_3.0.3/bin/MsgLog.txt) -> MsgLog.txt
-def _extractFilename(path: str):
+def _extractFilename(path: str) -> str:
     idx = path.rfind('/')
     if idx > 0 :
         return path[idx+1:] 
@@ -138,13 +135,12 @@ def _extractFilename(path: str):
 
 # Get the data filename and return the info filename
 # Run1_list.txt -> Run1_Info.txt)
-def _infoFilename(fname: str):
+def _infoFilename(fname: str) -> str:
     return fname.replace("_list.txt", "_Info.txt")
 
 
 
-
-
+# Exit routine function
 def exitRoutine() -> None: 
     """
     Exit routine function:
@@ -152,7 +148,10 @@ def exitRoutine() -> None:
     2. Print the summary of the processed FERS run since the beginning.
     3. Gracefully exit.
     """
-    dumpCache(procROOTList, dumpCacheRunStatus)
+    if dumpCacheRun:
+        dumpCache(procROOTList)
+    else:
+        logging.warning("Cache dump off.")
     # Wait for the produced to finish
     exit(0)
     
@@ -220,6 +219,16 @@ def convertLoop():
         time.sleep(2)
 
 
+# Handle CLI arguments
+if len(CLIargs) > 1:
+    internalArgs = [a5202dataDir, outputROOTdirectory, dumpCacheRun]
+    for i, arg in enumerate(CLIargs[1:]):
+        if i == 2: arg = bool(int(arg))
+        internalArgs[i] = arg
+    logging.info(f"Janus input file directory: {a5202dataDir}")
+    logging.info(f"ROOT output file directory: {outputROOTdirectory}")
+    logging.info(f"Saving cache file is      : {'on' if dumpCacheRun==True else 'off'}")
+    
 
 
 if __name__ == "__main__":
