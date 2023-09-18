@@ -24,11 +24,12 @@ This software is a byproduct of software development of a test beam of two sapph
 <a id="1">[1]</a> Dijkstra, E. W. (1968). Go to statement considered harmful. Communications of the ACM, 11(3), 147-148.
 
 ## Brief description
-The scripts looks for the content of the directory `a5202dataDir`. It waits for the current acquisition to close, and finally it converts the run data into a ROOT file saved in the `outputROOTdirectory`. The default input/output paths can be overridden by passing the two arguments to the application:
+The scripts looks for the content of the directory `a5202dataDir`. It waits for the current acquisition to close, and finally it converts the run data into a ROOT file saved in the `outputROOTdirectory`.
+<!-- The default input/output paths can be overridden by passing the two arguments to the application:
 ```
 python fers.py <inputTXTdir> <outputROOTdir>
 ```
-
+-->
 The script runs either online (while JanusC is running) or offline, completely independent from JanusC acquisition application. 
 
 ## ROOT structure
@@ -156,15 +157,19 @@ By default, FERS data is saved into a unsigned int and A5202 subtracts factory p
 
 ## Usage
 
-Run the script with the default settings `python fers.py` or with custom input/output paths
+Run the script with the default settings `python fers.py`.
+<!-- Input/output paths can be personalized
 ```
 python fers.py <inputTXTdir> <outputROOTdir>
 ```
-When all the files in the input directory are converted, the script waits for the next acquisition to close. The script can be interrupted by pressing `Ctrl+C`. A cache file is saved in order to keep track of files that were already converted. This is useful when the script is run in online mode, and can be disabled by setting `cache=False` in the `fers.py` script or by explicitely setting cache to False in the command line:
+-->
+When all the files in the input directory are converted, the script waits for the next acquisition to close. The script can be interrupted by pressing `Ctrl+C`. A cache file is saved in order to keep track of files that were already converted.
+<!--
+This is useful when the script is run in online mode, and can be disabled by setting `cache=False` in the `fers.py` script or by explicitely setting cache to False in the command line:
 ```
 python fers.py <inputTXTdir> <outputROOTdir> 0
 ```
-
+-->
 
 
 ## Contributing and license
