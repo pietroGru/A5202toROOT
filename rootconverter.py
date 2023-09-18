@@ -1,6 +1,22 @@
-from logger import *
-from rdataStruct import *
+from rdataStruct import rdataStruct_FERS_newVector as rdataStruct
+from rdataStruct import FERStoStrip_single
+from tqdm import tqdm
+import numpy as np
 import datetime
+
+from logger import create_logger
+logging = create_logger("rootconverter")
+
+##############################################################
+######## FERS A5202 to sensor ch. map ########################
+##############################################################
+# Dictionary with FERS channel to sensor associations
+# FERS:[Sensor(upstream/downstream), stripNb]
+FERStoStrip_singlenp = np.array(list(FERStoStrip_single.items()), dtype=np.uint16)
+##############################################################
+######## / FERS A5202 to sensor ch. map ######################
+##############################################################
+
 
 ##############################################################
 ######## rootconverter class #################################
@@ -23,6 +39,18 @@ class rootconverter():
         self.startTime = -1
         self.stopTime = -1
         self.elapsedTime = -1
+        self.globalEventCounter = 0
+        # Buffer contanining parsed data
+        self.buffer = {
+            "Tstamp_us": np.array([], dtype=np.double),
+            "TrgID": np.array([], dtype=np.uint32),
+            "Brd": np.array([], dtype=np.uint32),
+            "Ch": np.array([], dtype=np.uint32),
+            "LG": np.array([], dtype=np.int32),
+            "HG": np.array([], dtype=np.int32),
+            "timestamp": np.array([], dtype=np.double)
+        }
+
         #
         self.parseLineData_prev = []
         self.strData_prev = ["-1" for i in range(6)]
@@ -56,7 +84,7 @@ class rootconverter():
         return int(filename[posA+3:posB])
     
     # Parse the data line
-    def parseLineData_toROOT(self, line: str):
+    def parseLineData_toBuffer(self, line: str):
         Tstamp_us = line[:22]
         TrgID = line[23:33]
         Brd = line[33:35]
@@ -64,7 +92,7 @@ class rootconverter():
         LG = line[39:49]
         HG = line[49:-1]
         #
-        data_new = [0,0,0,0,0,0]
+        #data_new = [0,0,0,0,0,0]
         # Data object
         strData_new = [Tstamp_us, TrgID, Brd, Ch, LG, HG]
         for i, item in enumerate(strData_new):
@@ -72,14 +100,15 @@ class rootconverter():
                 item = self.strData_prev[i]
             else:
                 self.strData_prev[i] = item
-            data_new[i] = float(item)
-        event = 0
-        runTime = self.startTime
-        trgTime = runTime + np.double(data_new[0]*1e-6)
-        if self.rFileOpen:
-            (self.rfile).FERS_fill(self.runID, runTime, event, trgTime, data_new[1], data_new[0], data_new[2], data_new[3], data_new[4], data_new[5], data_new[2], FERStoStrip_single[data_new[3]], 0, 0)
-            #self.runDataTree.Fill(self.runID, runTime, event, data_new[0], data_new[1], data_new[2], data_new[3], data_new[4], data_new[5], trgTime)
-        return data_new
+        
+        self.buffer['Tstamp_us'] = np.append(self.buffer['Tstamp_us'], np.double(self.strData_prev[0]))
+        self.buffer['TrgID'] = np.append(self.buffer['TrgID'], np.uint32(self.strData_prev[1]))
+        self.buffer['Brd'] = np.append(self.buffer['Brd'], np.uint32(self.strData_prev[2]))
+        self.buffer['Ch'] = np.append(self.buffer['Ch'], np.uint16(self.strData_prev[3]))
+        self.buffer['LG'] = np.append(self.buffer['LG'], np.int16(self.strData_prev[4]))
+        self.buffer['HG'] = np.append(self.buffer['HG'], np.int16(self.strData_prev[5]))
+        self.buffer['timestamp'] = np.append(self.buffer['timestamp'], np.double(self.strData_prev[0])+self.startTime)
+
 
     # Parse the energy histo channel line
     def parseEnergyHistoCh(self, line: str):
@@ -205,6 +234,8 @@ class rootconverter():
             logging.info(f"Path: {self.fname_info}\nFileNotFoundError. Run not closed yet.")
             return False         
 
+    
+
     # Convert txt to root file
     def convert(self):
         # Get filename of the ROOT file
@@ -219,12 +250,82 @@ class rootconverter():
             self.rfile.FERSsetup_fill()
             # Store run datapoints in ROOT
             with open(self.fname_list, 'r') as infile:
-                for i, line in enumerate(infile):
+                for i, line in tqdm(enumerate(infile)):
                     if i<9:
                         if i==4:
                             self.histoCh = self.parseEnergyHistoCh(line)
                     else:
-                        self.parseLineData_toROOT(line)
+                        self.parseLineData_toBuffer(line)
+            
+            # Data clustering by event and ROOT filling
+            ## Make sure to have matched/complete data for all the events by trimming the data
+            ## fields to match the dimension of the smallest one
+            smallestDim = len(self.buffer['Tstamp_us'])
+            for dataField in self.buffer:
+                if len(self.buffer[dataField]) != smallestDim:
+                    logging.warning("Data fields have different dimensions. Trimming to match the smallest one.")
+                smallestDim = min(smallestDim, len(self.buffer[dataField]))
+            for dataField in self.buffer:
+                self.buffer[dataField] = self.buffer[dataField][:smallestDim] # This assumes that the missing data is at the end of the file
+            ## Cluster the data by event
+            ### Get the list of different events
+            evtList = np.unique(self.buffer['TrgID'])
+            mask_det0 = (self.buffer['Brd'] == 0)
+            mask_det1 = (self.buffer['Brd'] == 1)
+
+            brokenEvent = 0
+            for event in evtList:
+                # Build the mask
+                mask = self.buffer['TrgID'] == event
+                maskd0 = mask & mask_det0
+                maskd1 = mask & mask_det1
+
+                if np.max(maskd0) == False or np.max(maskd1) == False:
+                    brokenEvent += 1
+                    continue # handle cases where no overlap is present
+                
+                fers_evt = event
+                fers_trgtime = np.array([self.buffer['Tstamp_us'][maskd0][0], self.buffer['Tstamp_us'][maskd1][0]])
+                fers_ch0 = self.buffer['Ch'][maskd0]
+                fers_ch1 = self.buffer['Ch'][maskd1]
+                strip0 = FERStoStrip_singlenp[fers_ch0][:,1]
+                strip1 = FERStoStrip_singlenp[fers_ch1][:,1]
+                lg0 = self.buffer['LG'][maskd0]
+                hg0 = self.buffer['HG'][maskd0]
+                lg1 = self.buffer['LG'][maskd1]
+                hg1 = self.buffer['HG'][maskd1]
+                timestamp = self.startTime+self.buffer['Tstamp_us'][maskd0][0]
+                
+                self.rfile.FERS_fill(
+                    run = self.runID,
+                    runTime = self.startTime,
+                    event = self.globalEventCounter,
+                    fers_evt = fers_evt,
+                    fers_trgtime = fers_trgtime,
+                    fers_ch0 = fers_ch0,
+                    fers_ch1 = fers_ch1,
+                    strip0 = strip0,
+                    strip1 = strip1,
+                    lg0 = lg0,
+                    hg0 = hg0,
+                    lg1 = lg1,
+                    hg1 = hg1,
+                    timestamp = timestamp
+                )
+                self.globalEventCounter += 1
+                #print("fers_evt         ", fers_evt)
+                #print("fers_trgtime     ", fers_trgtime)
+                #print("fers_ch0         ", fers_ch0)
+                #print("fers_ch1         ", fers_ch1)
+                #print("strip0           ", strip0)
+                #print("strip1           ", strip1)
+                #print("lg0              ", lg0)
+                #print("hg0              ", hg0)
+                #print("lg1              ", lg1)
+                #print("hg1              ", hg1)
+                #print("timestamp        ", timestamp)
+
+            if brokenEvent: logging.error(f"Lost event {brokenEvent} (out of {len(evtList)}), that is {brokenEvent/len(evtList)*100.:.2f} %")
             # Close the ROOT file
             self.closeROOT()
             logging.info(f"Run {self.runID} converted to ROOT file")
@@ -237,84 +338,8 @@ class rootconverter():
 
 
 
-
-
-
-
-
-
-
-##############################################################
-######## FERS A5202 to sensor ch. map ########################
-##############################################################
-# Dictionary with FERS channel to sensor associations
-# FERS:[Sensor(upstream/downstream), stripNb]
-FERStoStrip_single = {
-    0  :  127,
-    1  :  125,
-    2  :  123,
-    3  :  121,
-    4  :  119,
-    5  :  117,
-    6  :  115,
-    7  :  113,
-    8  :  111,
-    9  :  109,
-    10 :  107,
-    11 :  105,
-    12 :  103,
-    13 :  101,
-    14 :  99,
-    15 :  97,
-    16 :  95,
-    17 :  93,
-    18 :  91,
-    19 :  89,
-    20 :  87,
-    21 :  85,
-    22 :  83,
-    23 :  81,
-    24 :  79,
-    25 :  77,
-    26 :  75,
-    27 :  73,
-    28 :  71,
-    29 :  69,
-    30 :  67,
-    31 :  65,
-    32 :  66,
-    33 :  68,
-    34 :  70,
-    35 :  72,
-    36 :  74,
-    37 :  76,
-    38 :  78,
-    39 :  80,
-    40 :  82,
-    41 :  84,
-    42 :  86,
-    43 :  88,
-    44 :  90,
-    45 :  92,
-    46 :  94,
-    47 :  96,
-    48 :  98,
-    49 :  100,
-    50 :  102,
-    51 :  104,
-    52 :  106,
-    53 :  108,
-    54 :  110,
-    55 :  112,
-    56 :  114,
-    57 :  116,
-    58 :  118,
-    59 :  120,
-    60 :  122,
-    61 :  124,
-    62 :  126,
-    63 :  128
-}
-##############################################################
-######## / FERS A5202 to sensor ch. map ######################
-##############################################################
+if __name__=="__main__":
+    logging.info("Test function for the class rootconverter")
+    test = rootconverter("/home/pietro/cleardaq/CLEAR_Vesper/FERS/data/230621/Run163_list.txt", "/home/pietro/work/CLEAR_March/FERS/TB4-192_FERS/")
+    test.convert()
+    logging.info("Goodbye")

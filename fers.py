@@ -26,9 +26,9 @@ procROOTList = "/home/pietro/work/CLEAR_March/FERS/TB4-192_FERS/runList.dat"
 # List of ROOT files processed in this session
 txtProcessedSession = []
 # Path where FERS data files are located 
-a5202dataDir = "/home/pietro/cleardaq/CLEAR_Vesper/FERS/data/230621/"
+a5202dataDir = "/home/pietro/cleardaq/CLEAR_Vesper/FERS/data/230718/"
 # Path where output ROOT files are located
-outputROOTdirectory = "/home/pietro/work/CLEAR_March/FERS/processed/230621/"
+outputROOTdirectory = "/home/pietro/work/CLEAR_Vesper/FERS/processed_vec/230718/"
 
 exitCall = False                # Boolean signalling exit interrupt call
 writingROOT = False             # ROOT writing status
@@ -189,7 +189,9 @@ def convertLoop():
         
         # Get the list of files in the directory
         runList_new = glob.glob(a5202dataDir+"Run*_list.txt")
+        runList_new.sort()  # Sort not striclty needed here
         infoList = glob.glob(a5202dataDir+"Run*_Info.txt")
+        infoList.sort()     # Sort not striclty needed here
         # Loop over the list of Run*_list file in the dir,
         # compare with the previously processed ROOT and eventually
         # process any new file        
