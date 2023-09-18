@@ -1,22 +1,11 @@
 from rdataStruct import rdataStruct_FERS_newVector as rdataStruct
-from rdataStruct import FERStoStrip_single
+from rdataStruct import FERStoStrip_singlenp
 from tqdm import tqdm
 import numpy as np
 import datetime
 
 from logger import create_logger
 logging = create_logger("rootconverter")
-
-##############################################################
-######## FERS A5202 to sensor ch. map ########################
-##############################################################
-# Dictionary with FERS channel to sensor associations
-# FERS:[Sensor(upstream/downstream), stripNb]
-FERStoStrip_singlenp = np.array(list(FERStoStrip_single.items()), dtype=np.uint16)
-##############################################################
-######## / FERS A5202 to sensor ch. map ######################
-##############################################################
-
 
 ##############################################################
 ######## rootconverter class #################################
