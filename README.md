@@ -21,7 +21,6 @@ This software is a byproduct of software development of a test beam of two sapph
 ### References
 <a id="1">[1]</a> Caen 5202 webpage https://www.caen.it/products/a5202/ <br>
 <a id="2">[2]</a> Abramowicz, H., et al. "Technical Design Report for the LUXE Experiment." arXiv:2308.00515 (2023). <br>
-<a id="1">[1]</a> Dijkstra, E. W. (1968). Go to statement considered harmful. Communications of the ACM, 11(3), 147-148.
 
 ## Brief description
 The scripts looks for the content of the directory `a5202dataDir`. It waits for the current acquisition to close, and finally it converts the run data into a ROOT file saved in the `outputROOTdirectory`.
