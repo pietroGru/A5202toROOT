@@ -225,6 +225,7 @@ if len(CLIargs) > 1:
     for i, arg in enumerate(CLIargs[1:]):
         if i == 2: arg = bool(int(arg))
         internalArgs[i] = arg
+    a5202dataDir, outputROOTdirectory, dumpCacheRun = internalArgs[0], internalArgs[1], internalArgs[2]
     logging.info(f"Janus input file directory: {a5202dataDir}")
     logging.info(f"ROOT output file directory: {outputROOTdirectory}")
     logging.info(f"Saving cache file is      : {'on' if dumpCacheRun==True else 'off'}")
