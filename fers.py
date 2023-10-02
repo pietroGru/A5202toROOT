@@ -7,7 +7,7 @@ from logger import *
 from rootconverter import *
 from datetime import datetime
 import threading
-
+from sys import argv as CLIargs
 
 ##############################################################
 ######## globals #############################################
@@ -35,7 +35,7 @@ outputROOTdirectory = "/home/pietro/work/CLEAR_March/FERS/TB4-192_FERS_analysis/
 
 exitCall = False                # Boolean signalling exit interrupt call
 writingROOT = False             # ROOT writing status
-dumpCacheRunStatus = False      # Cache dump status
+dumpCacheRun = False            # Cache dump mode (True = dump cache, False = do not dump cache)
 
 
 ##############################################################
@@ -155,7 +155,7 @@ def exitRoutine() -> None:
     2. Print the summary of the processed FERS run since the beginning.
     3. Gracefully exit.
     """
-    dumpCache(procROOTList, dumpCacheRunStatus)
+    dumpCache(procROOTList, dumpCacheRun)
     # Wait for the produced to finish
     exit(0)
     
@@ -220,6 +220,18 @@ def convertLoop():
         # To reduce CPU load
         time.sleep(2)
 
+
+
+# Handle CLI arguments
+if len(CLIargs) > 1:
+    internalArgs = [a5202dataDir, outputROOTdirectory, dumpCacheRun]
+    for i, arg in enumerate(CLIargs[1:]):
+        if i == 2: arg = bool(int(arg))
+        internalArgs[i] = arg
+    a5202dataDir, outputROOTdirectory, dumpCacheRun = internalArgs[0], internalArgs[1], internalArgs[2]
+    logging.info(f"Janus input file directory: {a5202dataDir}")
+    logging.info(f"ROOT output file directory: {outputROOTdirectory}")
+    logging.info(f"Saving cache file is      : {'on' if dumpCacheRun==True else 'off'}")
 
 
 
