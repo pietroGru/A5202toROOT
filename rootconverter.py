@@ -5,7 +5,6 @@ import numpy as np
 import datetime
 
 from logger import create_logger
-logging = create_logger("rootconverter")
 
 ##############################################################
 ######## rootconverter class #################################
@@ -13,8 +12,24 @@ logging = create_logger("rootconverter")
 ### Class
 # FERS ASCII (list + info) to ROOT class
 class rootconverter():
+    # rdataStruct_FERS logger
+    logging = create_logger("rootconverter")
+    
     def __init__(self, path, outputROOTdirectory) -> None:
-        logging.debug(f"rootconverter - Filename: {path}")
+        """
+        FERS ASCII (list + info) to ROOT converter class 
+        
+        Parameters
+        ----------
+            path (str) : Path to the ASCII file to be converted
+            outputROOTdirectory (str) : Path to the directory where the ROOT file will be saved
+            
+        Returns
+        -------
+            None
+        """
+        
+        (self.logging).debug(f"rootconverter - Filename: {path}")
         self.fname, self.inputTXTdirectory = self.utils_extractFilename(path)
         self.outputROOTdirectory = outputROOTdirectory
         # Run ID (from file), path of the filename of the data file and info file
@@ -134,7 +149,7 @@ class rootconverter():
 
     # Get run info parsing
     def processRunInfo(self, stream):
-        logging.info("Let's see...")
+        (self.logging).info("Let's see...")
         # Process the line
         def parseLine(line: str):
             if line[0] != '#' and '#' in line:
@@ -175,7 +190,7 @@ class rootconverter():
                     if starPos != -1:
                         if line.find(":", 11) != -1:
                             # Old date format
-                            logging.warning("Start/stop time in old format")
+                            (self.logging).warning("Start/stop time in old format")
                             startTime = datetime.datetime(
                                 day=int(line[12:14]),
                                 month=int(line[15:17]),
@@ -183,7 +198,7 @@ class rootconverter():
                                 hour=int(line[23:25]),
                                 minute=int(line[26:28])
                             )
-                            if len(line) >29: startTime.second = int(line[29:31])
+                            if len(line) >29: startTime = startTime + datetime.timedelta(seconds=int(line[29:31]))
                             self.startTime = startTime.timestamp()
                         else:
                             # New date format
@@ -199,7 +214,7 @@ class rootconverter():
                                 hour=int(line[23:25]),
                                 minute=int(line[26:28])
                             )
-                            if len(line) >29: stopTime.second = int(line[29:31])
+                            if len(line) >29: stopTime = stopTime + datetime.timedelta(seconds=int(line[29:31]))
                             self.stopTime = stopTime.timestamp()
                         else:
                             # New date format
@@ -212,7 +227,7 @@ class rootconverter():
                             self.elapsedTime = float(elapsedTime_us)
                         except ValueError:
                             self.elapsedTime = 0
-                            logging.error(f"Unable to determine elapsed time for line: {line}")
+                            (self.logging).error(f"Unable to determine elapsed time for line: {line}")
                         #logging.debug(self.startTime, self.stopTime, self.elapsedTime)
                 if i>6:
                     break
@@ -220,7 +235,7 @@ class rootconverter():
             if self.startTime != -1 and self.stopTime != -1 and self.elapsedTime != -1: return True
         except FileNotFoundError:
             # Run not closed yet
-            logging.info(f"Path: {self.fname_info}\nFileNotFoundError. Run not closed yet.")
+            (self.logging).warning(f"Path: {self.fname_info}\nFileNotFoundError. Run not closed yet.")
             return False         
 
     
@@ -252,7 +267,7 @@ class rootconverter():
             smallestDim = len(self.buffer['Tstamp_us'])
             for dataField in self.buffer:
                 if len(self.buffer[dataField]) != smallestDim:
-                    logging.warning("Data fields have different dimensions. Trimming to match the smallest one.")
+                    (self.logging).warning("Data fields have different dimensions. Trimming to match the smallest one.")
                 smallestDim = min(smallestDim, len(self.buffer[dataField]))
             for dataField in self.buffer:
                 self.buffer[dataField] = self.buffer[dataField][:smallestDim] # This assumes that the missing data is at the end of the file
@@ -270,8 +285,10 @@ class rootconverter():
                 maskd1 = mask & mask_det1
 
                 if np.max(maskd0) == False or np.max(maskd1) == False:
+                    # Handle cases where either you don't have both card data or 
+                    # the data from different boards for this event is not matched (you have only one)
                     brokenEvent += 1
-                    continue # handle cases where no overlap is present
+                    continue 
                 
                 fers_evt = event
                 fers_trgtime = np.array([self.buffer['Tstamp_us'][maskd0][0], self.buffer['Tstamp_us'][maskd1][0]])
@@ -314,10 +331,10 @@ class rootconverter():
                 #print("hg1              ", hg1)
                 #print("timestamp        ", timestamp)
 
-            if brokenEvent: logging.error(f"Lost event {brokenEvent} (out of {len(evtList)}), that is {brokenEvent/len(evtList)*100.:.2f} %")
+            if brokenEvent: (self.logging).error(f"Lost event {brokenEvent} (out of {len(evtList)}), that is {brokenEvent/len(evtList)*100.:.2f} %")
             # Close the ROOT file
             self.closeROOT()
-            logging.info(f"Run {self.runID} converted to ROOT file")
+            (self.logging).info(f"Run {self.runID} converted to ROOT file")
             return True
         else:
             return False
@@ -328,7 +345,9 @@ class rootconverter():
 
 
 if __name__=="__main__":
-    logging.info("Test function for the class rootconverter")
-    test = rootconverter("/home/pietro/cleardaq/CLEAR_Vesper/FERS/data/230621/Run163_list.txt", "/home/pietro/work/CLEAR_March/FERS/TB4-192_FERS/")
+    # rdataStruct_FERS logger
+    testLogger = create_logger("rootconverter")
+    testLogger.info("Test function for the class rootconverter")
+    test = rootconverter("/home/pietro/work/CLEAR_March/FERS/Janus_3.0.3/sample/Run10_list.txt", "/home/pietro/work/CLEAR_March/FERS/Janus_3.0.3/sample/")
     test.convert()
-    logging.info("Goodbye")
+    testLogger.info("Goodbye")
