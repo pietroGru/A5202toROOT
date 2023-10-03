@@ -84,8 +84,6 @@ FERStoStrip = {
 
 FERStoStrip = dict(sorted(FERStoStrip.items()))
 FERStoStrip_singlenp = np.array(list(FERStoStrip.values()), dtype=np.uint16)
-#FERStoStrip_GiulioCorretto_singlenp = np.array(list(FERStoStrip_GiulioCorretto.values()), dtype=np.uint16)
-#FERStoStripMOD_GiulioOddEvenScambiati_singlenp = np.array(list(FERStoStripMOD_GiulioOddEvenScambiati.values()), dtype=np.uint16)
 ##############################################################
 ######## / FERS A5202 to sensor ch. map ######################
 ##############################################################
@@ -370,6 +368,10 @@ class rdataStruct_FERS_newVector():
         self.FERS_vhg0 = np.zeros(64, dtype=np.int16)               # vector
         self.FERS_vlg1 = np.zeros(64, dtype=np.int16)               # vector
         self.FERS_vhg1 = np.zeros(64, dtype=np.int16)               # vector
+        self.FERS_vclg0 = np.zeros(64, dtype=np.double)             # vector
+        self.FERS_vchg0 = np.zeros(64, dtype=np.double)             # vector
+        self.FERS_vclg1 = np.zeros(64, dtype=np.double)             # vector
+        self.FERS_vchg1 = np.zeros(64, dtype=np.double)             # vector
         self.FERS_dtime = np.array([0], dtype=np.double)
         #
         self.FERS_nametypes = [
@@ -387,6 +389,10 @@ class rdataStruct_FERS_newVector():
             ["hg0",         self.FERS_vhg0,          "hg0[64]/S",        "FERS high-gain (signed) ADC det0 [int16]"],
             ["lg1",         self.FERS_vlg1,          "lg1[64]/S",        "FERS low-gain (signed) ADC det1 [int16]"],
             ["hg1",         self.FERS_vhg1,          "hg1[64]/S",        "FERS high-gain (signed) ADC det1 [int16]"],
+            ["clg0",        self.FERS_vclg0,         "clg0[64]/D",       "Calibrated LG charge det0 [pC]"],
+            ["chg0",        self.FERS_vchg0,         "chg0[64]/D",       "Calibrated HG charge det0 [pC]"],
+            ["clg1",        self.FERS_vclg1,         "clg1[64]/D",       "Calibrated LG charge det1 [pC]"],
+            ["chg1",        self.FERS_vchg1,         "chg1[64]/D",       "Calibrated HG charge det1 [pC]"],
             ["time",        self.FERS_dtime,         "time/D",           "Event posix digitizer timestamp"]
         ]
         #
@@ -548,22 +554,25 @@ class rdataStruct_FERS_newVector():
             i (int): Entry number 
 
         Returns:
-            fers_run : 0
-            fers_runTime : 1
-            fers_event : 2
-            fers_timestamp : 3
-            fers_fers_evt : 4
-            fers_fers_trgtime : 5
-            fers_fers_board : 6
-            fers_det : 10
-            fers_strip : 11
-            fers_lg : 12
-            fers_hg : 13
-            fers_time : 14
-            fers_vlg : 15
-            fers_vhg : 16
-            fers_vstrip : 17
-            fers_vch : 18
+            run : 0
+            runTime : 1
+            event : 2
+            timestamp : 3
+            fers_evt : 4
+            fers_trgtime : 5
+            fers_ch0 : 6
+            fers_ch1 : 7
+            strip0 : 8
+            strip1 : 9
+            lg0 : 10
+            hg0 : 11
+            lg1 : 12
+            hg1 : 13
+            clg0 : 14
+            chg0 : 15
+            clg1 : 16
+            chg1 : 17
+            time : 18
         """
 
         (self.FERS).GetEntry(i)
