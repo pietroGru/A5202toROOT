@@ -14,79 +14,81 @@ import tqdm
 ##############################################################
 # Dictionary with FERS channel to sensor associations
 # FERS:[Sensor(upstream/downstream), stripNb]
+# old map from Sergii (turned out to be wrong after all) # FERStoStrip = { 0  :  127, 1  :  125, 2  :  123, 3  :  121, 4  :  119, 5  :  117, 6  :  115, 7  :  113, 8  :  111, 9  :  109, 10 :  107, 11 :  105, 12 :  103, 13 :  101, 14 :  99, 15 :  97, 16 :  95, 17 :  93, 18 :  91, 19 :  89, 20 :  87, 21 :  85, 22 :  83, 23 :  81, 24 :  79, 25 :  77, 26 :  75, 27 :  73, 28 :  71, 29 :  69, 30 :  67, 31 :  65, 32 :  66, 33 :  68, 34 :  70, 35 :  72, 36 :  74, 37 :  76, 38 :  78, 39 :  80, 40 :  82, 41 :  84, 42 :  86, 43 :  88, 44 :  90, 45 :  92, 46 :  94, 47 :  96, 48 :  98, 49 :  100, 50 :  102, 51 :  104, 52 :  106, 53 :  108, 54 :  110, 55 :  112, 56 :  114, 57 :  116, 58 :  118, 59 :  120, 60 :  122, 61 :  124, 62 :  126, 63 :  128 }
 FERStoStrip = {
-    0  :  127,
-    1  :  125,
-    2  :  123,
-    3  :  121,
-    4  :  119,
-    5  :  117,
-    6  :  115,
-    7  :  113,
-    8  :  111,
-    9  :  109,
-    10 :  107,
-    11 :  105,
-    12 :  103,
-    13 :  101,
-    14 :  99,
-    15 :  97,
-    16 :  95,
-    17 :  93,
-    18 :  91,
-    19 :  89,
-    20 :  87,
-    21 :  85,
-    22 :  83,
-    23 :  81,
-    24 :  79,
-    25 :  77,
-    26 :  75,
-    27 :  73,
-    28 :  71,
-    29 :  69,
-    30 :  67,
-    31 :  65,
-    32 :  66,
-    33 :  68,
-    34 :  70,
-    35 :  72,
-    36 :  74,
-    37 :  76,
-    38 :  78,
-    39 :  80,
-    40 :  82,
-    41 :  84,
-    42 :  86,
-    43 :  88,
-    44 :  90,
-    45 :  92,
-    46 :  94,
-    47 :  96,
-    48 :  98,
-    49 :  100,
-    50 :  102,
-    51 :  104,
-    52 :  106,
-    53 :  108,
-    54 :  110,
-    55 :  112,
-    56 :  114,
-    57 :  116,
-    58 :  118,
-    59 :  120,
-    60 :  122,
-    61 :  124,
-    62 :  126,
-    63 :  128
+    0   :   128,
+    1   :   126,
+    2   :   124,
+    3   :   122,
+    4   :   120,
+    5   :   118,
+    6   :   116,
+    7   :   114,
+    8   :   112,
+    9   :   110,
+    10  :   108,
+    11  :   106,
+    12  :   104,
+    13  :   102,
+    14  :   100,
+    15  :   98,
+    16  :   96,
+    17  :   94,
+    18  :   92,
+    19  :   90,
+    20  :   88,
+    21  :   86,
+    22  :   84,
+    23  :   82,
+    24  :   80,
+    25  :   78,
+    26  :   76,
+    27  :   74,
+    28  :   72,
+    29  :   70,
+    30  :   68,
+    31  :   66,
+    32  :   65,
+    33  :   67,
+    34  :   69,
+    35  :   71,
+    36  :   73,
+    37  :   75,
+    38  :   77,
+    39  :   79,
+    40  :   81,
+    41  :   83,
+    42  :   85,
+    43  :   87,
+    44  :   89,
+    45  :   91,
+    46  :   93,
+    47  :   95,
+    48  :   97,
+    49  :   99,
+    50  :   101,
+    51  :   103,
+    52  :   105,
+    53  :   107,
+    54  :   109,
+    55  :   111,
+    56  :   113,
+    57  :   115,
+    58  :   117,
+    59  :   119,
+    60  :   121,
+    61  :   123,
+    62  :   125,
+    63  :   127
 }
 
-FERStoStrip_singlenp = np.array(list(FERStoStrip.items()), dtype=np.uint16)
+FERStoStrip = dict(sorted(FERStoStrip.items()))
+FERStoStrip_singlenp = np.array(list(FERStoStrip.values()), dtype=np.uint16)
+#FERStoStrip_GiulioCorretto_singlenp = np.array(list(FERStoStrip_GiulioCorretto.values()), dtype=np.uint16)
+#FERStoStripMOD_GiulioOddEvenScambiati_singlenp = np.array(list(FERStoStripMOD_GiulioOddEvenScambiati.values()), dtype=np.uint16)
 ##############################################################
 ######## / FERS A5202 to sensor ch. map ######################
 ##############################################################
-
-
 
 
 
@@ -875,8 +877,6 @@ class rdataStruct_MERGE():
         self.FERS_vtimestamp = np.array([0,0], dtype=np.double)
         self.FERS_vfers_evt = np.array([0,0], dtype=np.uint32)
         self.FERS_vfers_trgtime = np.array([0,0], dtype=np.double)
-        self.FERS_ifers_board = np.array([0], dtype=np.uint32)
-        self.FERS_idet = np.array([0], dtype=np.uint32)
         self.FERS_vfers_ch0 = np.zeros(64, dtype=np.uint32)         # vector
         self.FERS_vfers_ch1 = np.zeros(64, dtype=np.uint32)         # vector
         self.FERS_vstrip0 = np.zeros(64, dtype=np.uint32)           # vector
@@ -885,6 +885,10 @@ class rdataStruct_MERGE():
         self.FERS_vhg0 = np.zeros(64, dtype=np.int32)               # vector
         self.FERS_vlg1 = np.zeros(64, dtype=np.int32)               # vector
         self.FERS_vhg1 = np.zeros(64, dtype=np.int32)               # vector
+        self.FERS_vclg0 = np.zeros(64, dtype=np.double)             # vector
+        self.FERS_vchg0 = np.zeros(64, dtype=np.double)             # vector
+        self.FERS_vclg1 = np.zeros(64, dtype=np.double)             # vector
+        self.FERS_vchg1 = np.zeros(64, dtype=np.double)             # vector
         self.FERS_dtime = np.array([0], dtype=np.double)
         self.FERS_ilag = np.array([0], dtype=np.int32)              # 30/7/23 00:13 lag value
         #
@@ -895,16 +899,18 @@ class rdataStruct_MERGE():
             ("timestamp",   self.FERS_vtimestamp,    "timestamp[2]/D",   "Event posix timestamp (absolute)"),
             ("fers_evt",    self.FERS_vfers_evt,     "fers_evt[2]/i",    "FERS event ID [0-1000]"),
             ("fers_trgtime",self.FERS_vfers_trgtime, "fers_trgtime[2]/D","FERS trigger time from run start [us]"),
-            #("fers_board",  self.FERS_ifers_board,   "fers_board/i",     "FERS board ID [0,1]"),
-            #("det",         self.FERS_idet,          "det/i",            "Detector ID [0,1]"),
             ("fers_ch0",    self.FERS_vfers_ch0,     "fers_ch0[64]/i",   "FERS ch det0 [uint32]"),
             ("fers_ch1",    self.FERS_vfers_ch1,     "fers_ch1[64]/i",   "FERS ch det1 [uint32]"),
             ("strip0",      self.FERS_vstrip0,       "strip0[64]/i",     "Strip ID det0 [uint32]"),
             ("strip1",      self.FERS_vstrip1,       "strip1[64]/i",     "Strip ID det1 [uint32]"),
-            ("lg0",         self.FERS_vlg0,          "lg0[64]/I",        "FERS low-gain (signed) ADC det0 [uint32]"),
-            ("hg0",         self.FERS_vhg0,          "hg0[64]/I",        "FERS high-gain (signed) ADC det0 [uint32]"),
-            ("lg1",         self.FERS_vlg1,          "lg1[64]/I",        "FERS low-gain (signed) ADC det1 [uint32]"),
-            ("hg1",         self.FERS_vhg1,          "hg1[64]/I",        "FERS high-gain (signed) ADC det1 [uint32]"),
+            ("lg0",         self.FERS_vlg0,          "lg0[64]/I",        "FERS low-gain (signed) ADC det0 [int32]"),
+            ("hg0",         self.FERS_vhg0,          "hg0[64]/I",        "FERS high-gain (signed) ADC det0 [int32]"),
+            ("lg1",         self.FERS_vlg1,          "lg1[64]/I",        "FERS low-gain (signed) ADC det1 [int32]"),
+            ("hg1",         self.FERS_vhg1,          "hg1[64]/I",        "FERS high-gain (signed) ADC det1 [int32]"),
+            ("clg0",        self.FERS_vclg0,         "clg0[64]/D",       "Calibrated FERS low-gain charge det0 [pC]"),
+            ("chg0",        self.FERS_vchg0,         "chg0[64]/D",       "Calibrated FERS high-gain charge det0 [pC]"),
+            ("clg1",        self.FERS_vclg1,         "clg1[64]/D",       "Calibrated FERS low-gain charge det1 [pC]"),
+            ("chg1",        self.FERS_vchg1,         "chg1[64]/D",       "Calibrated FERS high-gain charge det1 [pC]"),
             ("time",        self.FERS_dtime,         "time/D",           "Event posix digitizer timestamp"),
             ("lag",         self.FERS_ilag,          "lag/I",            "Offset in trigger units between DT5730 and FERS datapoint")
         ]
@@ -1135,20 +1141,70 @@ class rdataStruct_MERGE():
             i (int): Entry number 
 
         Returns:
+        
+fers_run
+fers_runTime
+fers_event
+fers_timestamp
+fers_fers_evt
+fers_fers_trgtime
+fers_fers_ch0
+fers_fers_ch1
+fers_strip0
+fers_strip1
+fers_lg0
+fers_hg0
+fers_lg1
+fers_hg1
+fers_clg0
+fers_chg0
+fers_clg1
+fers_chg1
+fers_time
+fers_lag
+
+dt5730_run
+dt5730_runTime
+dt5730_event
+dt5730_timestamp
+dt5730_dgt_evt
+dt5730_dgt_trgtime
+dt5730_dgt_evtsize
+dt5730_avg
+dt5730_std
+dt5730_ptNb
+dt5730_avgV
+dt5730_stdV
+dt5730_avgQ
+dt5730_trgtime
+
+a1561hdp_run
+a1561hdp_event
+a1561hdp_timestamp
+a1561hdp_s0
+a1561hdp_c0V
+a1561hdp_c0I
+a1561hdp_s1
+a1561hdp_c1V
+a1561hdp_c1I
+a1561hdp_kill
+
             fers_run : 0
             fers_runTime : 1
             fers_event : 2
             fers_timestamp : 3
             fers_fers_evt : 4
             fers_fers_trgtime : 5
-            fers_fers_board : 6
-            fers_det : 10
             fers_strip : 11
             fers_lg : 12
             fers_hg : 13
             fers_time : 14
             fers_vlg : 15
             fers_vhg : 16
+            
+            fers_vclg : 15
+            fers_vchg : 16
+            
             fers_vstrip : 17
             fers_vch : 18
             dt5730_run : 18
@@ -1465,7 +1521,6 @@ class rdataStruct_BASLER():
 ######################################################
 ######################################################
 ######################################################
-
 class rdataStruct_A1561HDP():
     # rdataStruct_A1561HDP logger
     logging = create_logger("rdataStruct_A1561HDP")
@@ -1640,7 +1695,176 @@ class rdataStruct_A1561HDP():
 
     ######################################################
     ######################################################
+
+
+######################################################
+######################################################
+######################################################
+class rdataStruct_FERS_buddy():
+    # rdataStruct_FERS logger
+    logging = create_logger("rdataStructFERSbuddy")
+
+    def __init__(self, fname, mode="RECREATE", setVars = None):
+        ## Internal
+        # mode state
+        self.mode = mode
+        # filename
+        self.ROOTfilename = fname
+    
+        ######################################################
+        ################
+        ### TTree: FERS
+        ## Variable definitions
+        #self.FERS = None
+        self.FERS_irun = np.array([0], dtype=np.uint32)
+        self.FERS_dtimestamp = np.array([0], dtype=np.double)
+        self.FERS_ifers_evt = np.array([0], dtype=np.uint32)
+        self.FERS_idet = np.array([0], dtype=np.uint32)
         
+        
+        self.FERS_istripMask = np.array([-1], dtype=np.uint32)
+        self.FERS_berrMask = np.array([0], dtype=np.bool_)
+        
+        self.FERS_if1_status = np.array([-1], dtype=np.uint32)
+        self.FERS_df1_chisqr = np.array([-1], dtype=np.double)
+        self.FERS_df1_sigAmp = np.array([-1], dtype=np.double)
+        self.FERS_df1_sigMea = np.array([-1], dtype=np.double)
+        self.FERS_df1_sigSig = np.array([-1], dtype=np.double)
+        self.FERS_df1_bacCon = np.array([-1], dtype=np.double)
+
+        self.FERS_nametypes = [
+            ("run",             self.FERS_irun,         "run/i",            "Run id number"),
+            ("timestamp",       self.FERS_dtimestamp,   "timestamp/D",      "Event posix timestamp (absolute)"),
+            ("fers_evt",        self.FERS_ifers_evt,    "fers_evt/i",       "FERS event ID [0-1000]"),
+            ("det",             self.FERS_idet,         "det/i",            "Detector ID [0,1]"),
+            #
+            ("stripMask",       self.FERS_istripMask,   "stripMask/i",      "Strip mask for the fit parameters EFO (even:0, full:1, odd:2)"),
+            ("errMask",         self.FERS_berrMask,     "errMask/O",        "Error mask (0 for fit pars, 1 for uncertainties)"),
+            #
+            ("f1_status",       self.FERS_if1_status,   "f1_status/i",      "Fit m.1 (gaus+const). Status"),
+            ("f1_chisqr",       self.FERS_df1_chisqr,   "f1_chisqr/D",      "Fit m.1 (gaus+const). Chi square"),
+            ("f1_sigAmp",       self.FERS_df1_sigAmp,   "f1_sigAmp/D",      "Fit m.1 (gaus+const). Amplitude [pC]"),
+            ("f1_sigMea",       self.FERS_df1_sigMea,   "f1_sigMea/D",      "Fit m.1 (gaus+const). Mean [strip]"),
+            ("f1_sigSig",       self.FERS_df1_sigSig,   "f1_sigSig/D",      "Fit m.1 (gaus+const). Sigma [mm]"),
+            ("f1_bacCon",       self.FERS_df1_bacCon,   "f1_bacCon/D",      "Fit m.1 (gaus+const). Bckg constant [pC]")
+
+            #("fit2_SigAmpl",      FITResults_dfitSchemeB_SigAmpl,     "fB_SigAmpl/D",     "Fit par.s (gausSig+gaussBckg) - Signal Amplitude [pC]"),
+            #("fit2_SigMean",      FITResults_dfitSchemeB_SigMean,     "fB_SigMean/D",     "Fit par.s (gausSig+gaussBckg) - Signal Mean [strip]"),
+            #("fit2_SigSigma",     FITResults_dfitSchemeB_SigSigma,    "fB_SigSigma/D",    "Fit par.s (gausSig+gaussBckg) - Signal Sigma [mm]"),
+            #("fit2_BacAmpl",      FITResults_dfitSchemeB_BacAmpl,     "fB_BacAmpl/D",     "Fit par.s (gausSig+gaussBckg) - Background Amplitude [pC]"),
+            #("fit2_BacMean",      FITResults_dfitSchemeB_BacMean,     "fB_BacMean/D",     "Fit par.s (gausSig+gaussBckg) - Background Mean [strip]"),
+            #("fit2_BacSigma",     FITResults_dfitSchemeB_BacSigma,    "fB_BacSigma/D",    "Fit par.s (gausSig+gaussBckg) - Background Sigma [mm]")
+        ]
+        ######################################################
+    
+        # Get run id and filename
+        if mode == "RECREATE" and type(setVars) is dict:
+            self.fileFirstRunTime = setVars["fileRunTime"]
+            self.fileRunID = setVars["fileRunID"]
+            if self.fileRunID < 0:
+                (self.logging).error("Provided runID is negative.")
+                (self.logging).warning("runID defaulting to 0")
+                self.fileRunID = 0
+        elif mode == "RECREATE" and setVars==None:
+            if ((self.logging).level==10): (self.logging).warning(f"ROOT file is in {mode} and setVars provided are {setVars}")
+        
+        # Open ROOT output file
+        self.ROOTfile = ROOT.TFile.Open(fname, mode)
+        (self.logging).debug(f"Opening {fname} in {mode} mode")
+        if mode == "RECREATE":
+            (self.logging).debug("Attaching branches to variables.")
+            ## Generate the FERSsetup TTree
+            #self.setupTTree_FERSsetup()
+            # Generate the FERS TTree
+            self.setupTTree_FERS()
+        else:
+            ## FERSSetup
+            #self.FERSsetup = self.ROOTfile.FERSsetup
+            ## todo Set branch addresses    
+            # FERS
+            self.FERS = self.ROOTfile.FERS
+            # Set branch addresses
+            self.FERS_bindBranches(self.FERS)
+    
+    ## Functions
+    # Bind branches of the DT5730 to variables
+    def FERS_bindBranches(self, tree):
+        for item in self.FERS_nametypes:
+            tree.SetBranchAddress(item[0], item[1])
+    # Fill tree with data
+    def FERS_fill(self, run, timestamp, fers_evt, det, stripMask, errMask, f1_status, f1_chisqr, f1_sigAmp, f1_sigMea, f1_sigSig, f1_bacCon):
+        if (self.FERS) is None:
+            (self.logging).critical("Tree 'data' is not initialized")
+            exit(0)
+        self.FERS_irun[0] = run
+        self.FERS_dtimestamp[0] = timestamp
+        self.FERS_ifers_evt[0] = fers_evt
+        self.FERS_idet[0] = det
+        self.FERS_istripMask[0] = stripMask
+        self.FERS_berrMask[0] = errMask
+        self.FERS_if1_status[0] = f1_status
+        self.FERS_df1_chisqr[0] = f1_chisqr
+        self.FERS_df1_sigAmp[0] = f1_sigAmp
+        self.FERS_df1_sigMea[0] = f1_sigMea
+        self.FERS_df1_sigSig[0] = f1_sigSig
+        self.FERS_df1_bacCon[0] = f1_bacCon
+        # Fill the tree
+        (self.FERS).Fill()
+    # Get entry i-th of the FERS TTree (for read mode)
+    def FERS_getEntry(self, i):
+        """
+        Description 
+        
+        Parameters
+        ----------
+            i (int): Entry number 
+
+        Returns:            
+            FERS_irun : 0
+            FERS_dtimestamp : 1
+            FERS_ifers_evt : 2
+            FERS_idet : 3
+            FERS_istripMask : 4
+            FERS_berrMask : 5
+            FERS_if1_status : 6
+            FERS_df1_chisqr : 7
+            FERS_df1_sigAmp : 8
+            FERS_df1_sigMea : 9
+            FERS_df1_sigSig : 10
+            FERS_df1_bacCon : 11            
+        """
+        (self.FERS).GetEntry(i)
+        return [(self.FERS_irun)[0], (self.FERS_dtimestamp)[0], (self.FERS_ifers_evt)[0], (self.FERS_idet)[0], (self.FERS_istripMask)[0], (self.FERS_berrMask)[0], (self.FERS_if1_status)[0], (self.FERS_df1_chisqr)[0], (self.FERS_df1_sigAmp)[0], (self.FERS_df1_sigMea)[0], (self.FERS_df1_sigSig)[0], (self.FERS_df1_bacCon)[0]]
+    # Setup the FERS TTree
+    def setupTTree_FERS(self):
+        # Define the TTree
+        self.FERS = ROOT.TTree("FERS_ana", "FERS analysis data")
+        # Create branches
+        for item in (self.FERS_nametypes):
+            (self.FERS).Branch(item[0], item[1], item[2])
+        # Set leaves description
+        self.TREE_SetLeavesDescriptions(self.FERS, self.FERS_nametypes)
+
+    
+    
+    ######################################################
+    ######################################################
+    ## Utilities
+    # Set description (better readibility)
+    def TREE_SetLeavesDescriptions(self, tree, tree_nametypes):
+        for entry in tree_nametypes:
+            tree.GetBranch(entry[0]).SetTitle(entry[3])
+
+    # Write all the content of the output root file and clear datastructures for the next one
+    def closeROOT(self):
+        if self.mode != "READ":
+            (self.FERS).Write()
+        # Single file
+        if type(self.ROOTfilename) is not list:
+            (self.ROOTfile).Close()
+
+
+
 ######################################################
 ######################################################
 ######################################################
