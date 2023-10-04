@@ -1,13 +1,16 @@
+from datetime import datetime as dttm
+from sys import argv as CLIargs
+from rootconverter import *
 from os.path import exists
-import time
-import glob
+import threading
 import pickle
 import signal
-from logger import *
-from rootconverter import *
-from datetime import datetime
-import threading
-from sys import argv as CLIargs
+import time
+import glob
+
+# fers.py logger
+from logger import create_logger
+logging = create_logger("fers")
 
 ##############################################################
 ######## globals #############################################
@@ -19,7 +22,8 @@ eventID = 0
 # List of FERS data file processed to ROOT
 procTXT = []
 # Path of the list of FERS datafiles processed to ROOT so far (from disk)
-daqStartTime = datetime.now()
+daqStartTime = dttm.now()
+
 rFilename = daqStartTime.strftime("%d%H%M%S_") + f"FERS_run{runID}.root"
 #
 procROOTList = "runList.dat"
