@@ -1,10 +1,14 @@
-from rdataStruct import rdataStruct_FERS_newVector as rdataStruct
+from rdataStruct import rdataStruct_FERS, rdataStruct_FERS_newVector
 from rdataStruct import FERStoStrip_singlenp
 from tqdm import tqdm
 import numpy as np
 import datetime
+import ROOT
 
+# rootconverter.py logger
 from logger import create_logger
+
+
 
 ##############################################################
 ######## rootconverter class #################################
@@ -12,10 +16,10 @@ from logger import create_logger
 ### Class
 # FERS ASCII (list + info) to ROOT class
 class rootconverter():
-    # rdataStruct_FERS logger
+    # rootconverter logger
     logging = create_logger("rootconverter")
     
-    def __init__(self, path, outputROOTdirectory) -> None:
+    def __init__(self, path, outputROOTdirectory, calPath="/home/pietro/work/CLEAR_March/FERS/TB4-192_FERS_analysis/calibrations/CERN_Vesper_withPedestals.root", rfileModeVector = True) -> None:
         """
         FERS ASCII (list + info) to ROOT converter class 
         
@@ -32,18 +36,29 @@ class rootconverter():
         (self.logging).debug(f"rootconverter - Filename: {path}")
         self.fname, self.inputTXTdirectory = self.utils_extractFilename(path)
         self.outputROOTdirectory = outputROOTdirectory
+        # Set the path of the calibration datafile
+        self.calPath = calPath
+        
         # Run ID (from file), path of the filename of the data file and info file
         self.runID = self.utils_parseRunID(self.fname)
         self.fname_list = self.inputTXTdirectory+f"Run{self.runID}_list.txt"
         self.fname_info = self.inputTXTdirectory+f"Run{self.runID}_Info.txt"
+        
         # Number of channels in the energy histogram
         self.histoCh = -1
+        
         # Run info from RunN_info.txt
         self.runSetup = []
         self.startTime = -1
         self.stopTime = -1
         self.elapsedTime = -1
         self.globalEventCounter = 0
+        
+        # ROOT file output mode: True is vector using rdataStruct_FERS_newVector, while false use rdataStruct_FERS
+        self.rfileModeVector = rfileModeVector
+        msg = "Using rdataStruct_FERS_newVector" if self.rfileModeVector else "Using rdataStruct_FERS"
+        (self.logging).info(msg)
+        
         # Buffer contanining parsed data
         self.buffer = {
             "Tstamp_us": np.array([], dtype=np.double),
@@ -60,7 +75,10 @@ class rootconverter():
         self.strData_prev = ["-1" for i in range(6)]
         # Global variables for ROOT filesaving
         rfilename = self.outputROOTdirectory+f"Run{self.runID}_list.root"
-        self.rfile = rdataStruct(rfilename, "RECREATE")
+        if self.rfileModeVector:
+            self.rfile = rdataStruct_FERS_newVector(rfilename, "RECREATE")
+        else:
+            self.rfile = rdataStruct_FERS(rfilename, "RECREATE")
 
     # Get run filename without extentions from the string
     def utils_extractFilename(self, path: str) -> tuple:
@@ -147,9 +165,38 @@ class rootconverter():
         #logging.debug(fname, result+".root")
         return result+".root"
 
+    # Get the (gainL, gainH, shapingLG, shapingHG) from the FERSsetup data contained in the self.runsetup
+    def getGainShaping(self) -> tuple:
+        """
+        Get the (gainL, gainH, shapingLG, shapingHG) from the FERSsetup data contained in the self.runsetup
+                
+        Returns
+        -------
+            (gainL, gainH, shapingLG, shapingHG) (tuple) : tuple with the gain and shaping time settings for the two cards
+        """
+        
+        # Create the dictionary between the parName and parValue
+        setupDict = {}
+        for entry in self.runSetup:
+            parName, parValue = entry[0], entry[1]
+            setupDict[parName] = parValue
+        # Extract the gain and shaping time
+        LG_Gain = int(setupDict['LG_Gain'])
+        HG_Gain = int(setupDict['HG_Gain'])
+        LG_ShapingTime = float(setupDict['LG_ShapingTime'].replace('ns', ''))
+        HG_ShapingTime = float(setupDict['HG_ShapingTime'].replace('ns', ''))
+        
+        # We have always used the same gain/shaping time settings for the two cards,
+        # although they can in principle have different values
+        gainL = (LG_Gain, LG_Gain)
+        gainH = (HG_Gain, HG_Gain)
+        shapingLG = (LG_ShapingTime, LG_ShapingTime)
+        shapingHG = (HG_ShapingTime, HG_ShapingTime)
+        
+        return (gainL, gainH, shapingLG, shapingHG)
+
     # Get run info parsing
     def processRunInfo(self, stream):
-        (self.logging).info("Let's see...")
         # Process the line
         def parseLine(line: str):
             if line[0] != '#' and '#' in line:
@@ -169,14 +216,23 @@ class rootconverter():
                 (self.runSetup).append(ldat)
                 # For ROOT
                 self.rfile.FERSsetup_pushback(self.runID, ldat[0], ldat[1], ldat[2])
-                #self.vrunIDs.push_back(self.runID)
-                #self.vparName.push_back(ldat[0])
-                #self.vparValue.push_back(ldat[1])
-                #self.vparDescr.push_back(ldat[2])
+        
         # Debug
         #for i, entry in enumerate(self.runSetup):
         #    print(i, entry)
-
+        
+        # Fill the gainL, gainH, shapingLG, shapingHG information
+        gainL, gainH, shapingLG, shapingHG = self.getGainShaping()
+        self.gainL = gainL
+        self.gainH = gainH
+        self.shapingLG = shapingLG
+        self.shapingHG = shapingHG
+        (self.logging).info(f"FERS setup (gain, shaping time) LG ({gainL}, {shapingLG}) | HG ({gainH}, {shapingHG})")
+        
+        # Fill the calibration information
+        self.lookupCalibration(gainL, gainH, shapingLG, shapingHG)
+        
+    
     # Check if the run has been completed (condition verified when the info file is written)
     def isRunClosed(self):
         try:
@@ -239,9 +295,68 @@ class rootconverter():
             return False         
 
     
+    # Look in the calibration structure for the calibration values for the given cardPID, shapingTime and gain.
+    def lookupCalibration(self, gainL: tuple, gainH: tuple, shapingLG: tuple, shapingHG: tuple):
+        """
+        Look in the calibration structure for the calibration values for the given cardPID, shapingTime and gain.
+        
+        Parameters
+        ----------
+            gainL (tuple) : tuple with low gain setting value (int) for (det0, det1) cards
+            gainH (tuple) : tuple with low gain setting value (int) for (det0, det1) cards
+            shapingLG (tuple) : tuple with LG shaping time (float) for (det0, det1) cards
+            shapingHG (tuple) : tuple with HG shaping time (float) for (det0, det1) cards
+            
+        Returns
+        -------
+            multLG (np.array) : 64-long array of double with calibration multiplier (pC = adc/mult)
+            pedeLG (np.array) : 64-long array of double with channel pedestal value
+            multHG (np.array) : 64-long array of double with calibration multiplier (pC = adc/mult)
+            pedeHG (np.array) : 64-long array of double with channel pedestal value
+        """
+        
+        (self.logging).info(f"Calibration data from {self.calPath}")
+        # Load calibration data
+        global chain
+        if 'chain' not in globals():
+            chain = ROOT.TChain("calibrations", "TTree with calibration data (from Lasagni ROOT)")
+            chain.Add(self.calPath + "?#22096_100mV_HG")
+            chain.Add(self.calPath + "?#22096_100mV_LG")
+            chain.Add(self.calPath + "?#24990_100mV_HG")
+            chain.Add(self.calPath + "?#24990_100mV_LG")
+
+        # Initialize the arrays
+        (self.multLG) = np.ones((2,64), dtype=np.double)
+        (self.pedeLG) = np.zeros((2,64), dtype=np.double)
+        (self.multHG) = np.ones((2,64), dtype=np.double)
+        (self.pedeHG) = np.zeros((2,64), dtype=np.double)
+
+        # Warning the user that not all the values have been found in the calibration table
+        multpedeLG_found = [False, False]
+        multpedeHG_found = [False, False]
+        
+        for entry in chain:
+            brd = entry.board
+            fers_ch = entry.channel
+            try:
+                lg = entry.multLG
+                if (entry.ShapingLG == shapingLG[brd] and entry.LG == gainL[brd]):
+                    (self.multLG)[brd, fers_ch] = lg
+                    (self.pedeLG)[brd, fers_ch] = entry.pedestalA
+                    multpedeLG_found[brd] = True
+            except AttributeError:
+                hg = entry.multHG
+                if (entry.ShapingHG == shapingHG[brd] and entry.HG == gainH[brd]):
+                    (self.multHG)[brd, fers_ch] = hg
+                    (self.pedeHG)[brd, fers_ch] = entry.pedestalA
+                    multpedeHG_found[brd] = True
+        
+        # Warning the user that not all the values have been found in the calibration table
+        if not (multpedeLG_found[0] and multpedeLG_found[1] and multpedeHG_found[0] and multpedeHG_found[1]): (self.logging).warning(f"Some calibration values were not present for the given arguments {gainL}, {gainH}, {shapingLG}, {shapingHG}")
+
 
     # Convert txt to root file
-    def convert(self):
+    def convert(self, mode=0):
         # Get filename of the ROOT file
         rfilename = self.outputROOTdirectory+f"Run{self.runID}_list.root"
         #logging.debug(f"rfilename: {rfilename}")
@@ -294,30 +409,60 @@ class rootconverter():
                 fers_trgtime = np.array([self.buffer['Tstamp_us'][maskd0][0], self.buffer['Tstamp_us'][maskd1][0]])
                 fers_ch0 = self.buffer['Ch'][maskd0]
                 fers_ch1 = self.buffer['Ch'][maskd1]
-                strip0 = FERStoStrip_singlenp[fers_ch0][:,1]
-                strip1 = FERStoStrip_singlenp[fers_ch1][:,1]
+                strip0 = FERStoStrip_singlenp[fers_ch0]
+                strip1 = FERStoStrip_singlenp[fers_ch1]
                 lg0 = self.buffer['LG'][maskd0]
                 hg0 = self.buffer['HG'][maskd0]
                 lg1 = self.buffer['LG'][maskd1]
                 hg1 = self.buffer['HG'][maskd1]
+                clg0 = lg0 * self.multLG[0, :] + self.pedeLG[0, :]
+                chg0 = hg0 * self.multHG[0, :] + self.pedeHG[0, :]
+                clg1 = lg1 * self.multLG[1, :] + self.pedeLG[1, :] 
+                chg1 = hg1 * self.multHG[1, :] + self.pedeHG[1, :]
                 timestamp = self.startTime+self.buffer['Tstamp_us'][maskd0][0]
                 
-                self.rfile.FERS_fill(
-                    run = self.runID,
-                    runTime = self.startTime,
-                    event = self.globalEventCounter,
-                    fers_evt = fers_evt,
-                    fers_trgtime = fers_trgtime,
-                    fers_ch0 = fers_ch0,
-                    fers_ch1 = fers_ch1,
-                    strip0 = strip0,
-                    strip1 = strip1,
-                    lg0 = lg0,
-                    hg0 = hg0,
-                    lg1 = lg1,
-                    hg1 = hg1,
-                    timestamp = timestamp
-                )
+                if self.rfileModeVector:
+                    self.rfile.FERS_fill(
+                        run = self.runID,
+                        runTime = self.startTime,
+                        event = self.globalEventCounter,
+                        fers_evt = fers_evt,
+                        fers_trgtime = fers_trgtime,
+                        fers_ch0 = fers_ch0,
+                        fers_ch1 = fers_ch1,
+                        strip0 = strip0,
+                        strip1 = strip1,
+                        lg0 = lg0,
+                        hg0 = hg0,
+                        lg1 = lg1,
+                        hg1 = hg1,
+                        clg0 = clg0,
+                        chg0 = chg0,
+                        clg1 = clg1, 
+                        chg1 = chg1,
+                        timestamp = timestamp
+                    )
+                else:
+                    # To implement
+                    for brd in range(2):
+                        for idx in range(64):
+                            self.rfile.FERS_fill(
+                                run = self.runID,
+                                runTime = self.startTime,
+                                event = self.globalEventCounter,
+                                timestamp = timestamp,
+                                fers_evt = fers_evt,
+                                fers_trgtime = fers_trgtime[brd],
+                                fers_board = brd,
+                                fers_ch = fers_ch0[idx] if brd==0 else fers_ch1[idx],
+                                fers_lg = lg0[idx] if brd==0 else lg1[idx],
+                                fers_hg = hg0[idx] if brd==0 else hg1[idx],
+                                det = brd,
+                                strip = strip0[idx] if brd==0 else strip1[idx],
+                                lg = clg0[idx] if brd==0 else clg1[idx],
+                                hg = chg0[idx] if brd==0 else chg1[idx]
+                            )
+                #
                 self.globalEventCounter += 1
                 #print("fers_evt         ", fers_evt)
                 #print("fers_trgtime     ", fers_trgtime)
@@ -329,6 +474,10 @@ class rootconverter():
                 #print("hg0              ", hg0)
                 #print("lg1              ", lg1)
                 #print("hg1              ", hg1)
+                #print("clg0              ", lg0 * self.multLG[0, :] + self.pedeLG[0, :])
+                #print("chg0              ", hg0 * self.multHG[0, :] + self.pedeHG[0, :])
+                #print("clg1              ", lg1 * self.multLG[1, :] + self.pedeLG[1, :])
+                #print("chg1              ", hg1 * self.multHG[1, :] + self.pedeHG[1, :])
                 #print("timestamp        ", timestamp)
 
             if brokenEvent: (self.logging).error(f"Lost event {brokenEvent} (out of {len(evtList)}), that is {brokenEvent/len(evtList)*100.:.2f} %")
@@ -348,6 +497,6 @@ if __name__=="__main__":
     # rdataStruct_FERS logger
     testLogger = create_logger("rootconverter")
     testLogger.info("Test function for the class rootconverter")
-    test = rootconverter("/home/pietro/work/CLEAR_March/FERS/Janus_3.0.3/sample/Run10_list.txt", "/home/pietro/work/CLEAR_March/FERS/Janus_3.0.3/sample/")
+    test = rootconverter("/home/pietro/work/CLEAR_March/FERS/Janus_3.0.3/sample/Run101_list.txt", "/home/pietro/work/CLEAR_March/FERS/Janus_3.0.3/sample/", rfileModeVector=False)
     test.convert()
     testLogger.info("Goodbye")
