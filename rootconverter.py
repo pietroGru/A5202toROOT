@@ -129,7 +129,7 @@ class rootconverter():
         self.buffer['Ch'] = np.append(self.buffer['Ch'], np.uint16(self.strData_prev[3]))
         self.buffer['LG'] = np.append(self.buffer['LG'], np.int16(self.strData_prev[4]))
         self.buffer['HG'] = np.append(self.buffer['HG'], np.int16(self.strData_prev[5]))
-        self.buffer['timestamp'] = np.append(self.buffer['timestamp'], np.double(self.strData_prev[0])+self.startTime)
+        self.buffer['timestamp'] = np.append(self.buffer['timestamp'], np.double(self.strData_prev[0])*1.0e-6 + self.startTime)
 
 
     # Parse the energy histo channel line
@@ -369,7 +369,8 @@ class rootconverter():
             self.rfile.FERSsetup_fill()
             # Store run datapoints in ROOT
             with open(self.fname_list, 'r') as infile:
-                for i, line in tqdm(enumerate(infile)):
+                lines = infile.readlines()
+                for i, line in tqdm(enumerate(lines), total=len(lines), desc="Parsing file"):
                     if i<9:
                         if i==4:
                             self.histoCh = self.parseEnergyHistoCh(line)
@@ -415,11 +416,11 @@ class rootconverter():
                 hg0 = self.buffer['HG'][maskd0]
                 lg1 = self.buffer['LG'][maskd1]
                 hg1 = self.buffer['HG'][maskd1]
-                clg0 = lg0 * self.multLG[0, :] + self.pedeLG[0, :]
-                chg0 = hg0 * self.multHG[0, :] + self.pedeHG[0, :]
-                clg1 = lg1 * self.multLG[1, :] + self.pedeLG[1, :] 
-                chg1 = hg1 * self.multHG[1, :] + self.pedeHG[1, :]
-                timestamp = self.startTime+self.buffer['Tstamp_us'][maskd0][0]
+                clg0 = lg0 / self.multLG[0, :] + self.pedeLG[0, :]
+                chg0 = hg0 / self.multHG[0, :] + self.pedeHG[0, :]
+                clg1 = lg1 / self.multLG[1, :] + self.pedeLG[1, :] 
+                chg1 = hg1 / self.multHG[1, :] + self.pedeHG[1, :]
+                timestamp = self.buffer['timestamp'][maskd0][0]
                 
                 if self.rfileModeVector:
                     self.rfile.FERS_fill(
@@ -497,6 +498,6 @@ if __name__=="__main__":
     # rdataStruct_FERS logger
     testLogger = create_logger("rootconverter")
     testLogger.info("Test function for the class rootconverter")
-    test = rootconverter("/home/pietro/work/CLEAR_March/FERS/Janus_3.0.3/sample/Run101_list.txt", "/home/pietro/work/CLEAR_March/FERS/Janus_3.0.3/sample/", rfileModeVector=False)
+    test = rootconverter("/home/pietro/work/CLEAR_March/FERS/TB4-192_FERS_analysis/processed_uncal/05oct23/txt/Run343_list.txt", "/home/pietro/work/CLEAR_March/FERS/Janus_3.0.3/sample/", rfileModeVector=True)
     test.convert()
     testLogger.info("Goodbye")
