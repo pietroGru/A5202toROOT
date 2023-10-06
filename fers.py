@@ -37,6 +37,7 @@ outputROOTdirectory = "/home/pietro/work/CLEAR_Vesper/FERS/processed_vec/230718/
 exitCall = False                # Boolean signalling exit interrupt call
 writingROOT = False             # ROOT writing status
 dumpCacheRun = False            # Cache dump mode (True = dump cache, False = do not dump cache)
+rfoutFormat = True              # ROOT file mode (True = vector, False = tree)
 
 
 ##############################################################
@@ -121,9 +122,9 @@ def dumpCache(cache_fname: str) -> None:
 ######## Aux functions #######################################
 ##############################################################
 # Convert a FERS file to ROOT
-def makeROOT(fname) -> None:
+def makeROOT(fname, mode) -> None:
     logging.debug(f"makeROOT - Filename: {fname}")
-    exampleClass = rootconverter(fname, outputROOTdirectory)
+    exampleClass = rootconverter(fname, outputROOTdirectory, rfileModeVector=mode)
     exampleClass.convert()
 
 
@@ -211,7 +212,7 @@ def convertLoop():
 
                     logging.info(f"Run {_extractFilename(item)} closed. Converting to ROOT...")
                     # This is a new file, let's convert to ROOT format
-                    makeROOT(item)
+                    makeROOT(item, rfoutFormat)
                     # Add the file to the list
                     procTXT.append(item)
                     txtProcessedSession.append(item)
@@ -225,14 +226,15 @@ def convertLoop():
 
 # Handle CLI arguments
 if len(CLIargs) > 1:
-    internalArgs = [a5202dataDir, outputROOTdirectory, dumpCacheRun]
+    internalArgs = [a5202dataDir, outputROOTdirectory, dumpCacheRun, rfoutFormat]
     for i, arg in enumerate(CLIargs[1:]):
-        if i == 2: arg = bool(int(arg))
+        if i == 2 or i == 3: arg = bool(int(arg))
         internalArgs[i] = arg
-    a5202dataDir, outputROOTdirectory, dumpCacheRun = internalArgs[0], internalArgs[1], internalArgs[2]
+    a5202dataDir, outputROOTdirectory, dumpCacheRun, rfoutFormat = internalArgs[0], internalArgs[1], internalArgs[2], internalArgs[2]
     logging.info(f"Janus input file directory: {a5202dataDir}")
     logging.info(f"ROOT output file directory: {outputROOTdirectory}")
     logging.info(f"Saving cache file is      : {'on' if dumpCacheRun==True else 'off'}")
+    logging.info(f"ROOT output file format   : {'vector' if rfoutFormat==True else 'tree'}")
     
 
 
