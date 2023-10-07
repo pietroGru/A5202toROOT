@@ -34,9 +34,12 @@ The script runs either online (while JanusC is running) or offline, completely i
 ## ROOT structure
 Run data is stored by JanusC in ascii text format in a couple of files 'Run*_list.txt' and 'Run*_Info.txt': the former containing the data from each channel/board and the latter the board configuration info. For each run, the readout data is appended into the '_list'. The file '_Info' is generated at the end of the run. This promts the python script to convert the data into a ROOT file.
 
+There are two possible structures for the output ROOT files, depending on what is more convenient for you you can turn one the first or second by operating on the flag `rfoutFormat` when calling the script from command line (see Section Usage for details.)
+
+### Plain ROOT structure (default)
 The default structure of the ROOT file is shown below
 
-<div style="margin-left: auto; margin-right: auto;"><img style="width:33%;" src="docs/img/root.jpg"></img><img style="width:33%;" src="docs/img/root_FERSsetup.jpg"></img><img style="width:33%;" src="docs/img/root_FERS.jpg"></img></div>
+<div style="margin-left: auto; margin-right: auto;"><img style="width:33%;" src="docs/img/s1_root.jpg"></img><img style="width:33%;" src="docs/img/s1_root_FERSsetup.jpg"></img><img style="width:33%;" src="docs/img/s1_root_FERS.jpg"></img></div>
 
 - **FERSsetup** contains the configurations used to setup the cards before acquisition starts; branch datatypes are string in order to accomodate for different frontend cards and firmaware updates, i.e. which could vary the parameters name;
 - **FERS** is a template TTree with structured data. It contains both raw data (fers_) and calibrated/processed data (det,strip,lg,hg). This can be changed acting on the rdataStruct.py and implementing his/her own callable for TTree filling (in fers.py)
@@ -140,6 +143,120 @@ root [5] FERS->GetBranch("lg")->GetTitle()
 
 The advantage of this approach is that all the information about data contained in the branch is contained in the ROOT file itself aside from the documentation.
 
+### Vector ROOT structure
+In this structure, the ROOT table contains all the event data in vector<double> objects. This is more convenient when it comes to selecting event data for extraction. Since ROOT automatically compresses the content of the ROOT files, the file size of the two format is expected to be similar. On the other hand, it is very likely that the memory structure of the vector ROOT file is more efficient than the plain ROOT structure.
+
+<div style="margin-left: auto; margin-right: auto;"><img style="width:33%;" src="docs/img/s2_root.jpg"></img><img style="width:33%;" src="docs/img/s2_root_FERSsetup.jpg"></img><img style="width:33%;" src="docs/img/s2_root_FERS.jpg"></img></div>
+
+The TBranch data types and descriptions can be found analogously to the default case.
+
+```c++
+   ------------------------------------------------------------------
+  | Welcome to ROOT 6.28/04                        https://root.cern |
+  | (c) 1995-2022, The ROOT Team; conception: R. Brun, F. Rademakers |
+  | Built for linuxx8664gcc on Jul 08 2023, 11:06:00                 |
+  | From heads/latest-stable@49886c13                                |
+  | With c++ (Ubuntu 11.3.0-1ubuntu1~22.04.1) 11.3.0                 |
+  | Try '.help'/'.?', '.demo', '.license', '.credits', '.quit'/'.q'  |
+   ------------------------------------------------------------------
+
+root [0] 
+Attaching file Run101_list.root as _file0...
+(TFile *) 0x55ed98b02a60
+root [1] .ls
+TFile**         Run101_list.root
+ TFile*         Run101_list.root
+  KEY: TTree    FERSsetup;1     TTree with run FERS setup settings
+  KEY: TTree    FERS;1  FERS processed data
+root [2] FERS->Print()
+******************************************************************************
+*Tree    :FERS      : FERS processed data                                    *
+*Entries :      915 : Total =         2876235 bytes  File  Size =    1840966 *
+*        :          : Tree compression factor =   1.56                       *
+******************************************************************************
+*Br    0 :run       : UInt_t Run id number                                   *
+*Entries :      915 : Total  Size=       4215 bytes  File Size  =        125 *
+*Baskets :        1 : Basket Size=      32000 bytes  Compression=  29.84     *
+*............................................................................*
+*Br    1 :runTime   : Double_t Posix time of the run start on the PC         *
+*Entries :      915 : Total  Size=       7923 bytes  File Size  =        163 *
+*Baskets :        1 : Basket Size=      32000 bytes  Compression=  45.36     *
+*............................................................................*
+*Br    2 :event     : UInt_t Event id number                                 *
+*Entries :      915 : Total  Size=       4225 bytes  File Size  =       1397 *
+*Baskets :        1 : Basket Size=      32000 bytes  Compression=   2.67     *
+*............................................................................*
+*Br    3 :timestamp : Double_t Event posix timestamp (absolute)              *
+*Entries :      915 : Total  Size=       7926 bytes  File Size  =       4032 *
+*Baskets :        1 : Basket Size=      32000 bytes  Compression=   1.83     *
+*............................................................................*
+*Br    4 :fers_evt  : UInt_t FERS event ID [0-1000]                          *
+*Entries :      915 : Total  Size=       4244 bytes  File Size  =       1400 *
+*Baskets :        1 : Basket Size=      32000 bytes  Compression=   2.67     *
+*............................................................................*
+*Br    5 :fers_trgtime : Double_t FERS trigger time from run start [us]      *
+*Entries :      915 : Total  Size=      15266 bytes  File Size  =      10895 *
+*Baskets :        1 : Basket Size=      32000 bytes  Compression=   1.35     *
+*............................................................................*
+*Br    6 :fers_ch0  : UShort_t FERS ch det0 [uint16]                         *
+*Entries :      915 : Total  Size=     117928 bytes  File Size  =       1700 *
+*Baskets :        4 : Basket Size=      32000 bytes  Compression=  69.07     *
+*............................................................................*
+*Br    7 :fers_ch1  : UShort_t FERS ch det1 [uint16]                         *
+*Entries :      915 : Total  Size=     117928 bytes  File Size  =       1700 *
+*Baskets :        4 : Basket Size=      32000 bytes  Compression=  69.07     *
+*............................................................................*
+*Br    8 :strip0    : UShort_t Strip ID det0 [uint16]                        *
+*Entries :      915 : Total  Size=     117915 bytes  File Size  =       1692 *
+*Baskets :        4 : Basket Size=      32000 bytes  Compression=  69.39     *
+*............................................................................*
+*Br    9 :strip1    : UShort_t Strip ID det1 [uint16]                        *
+*Entries :      915 : Total  Size=     117915 bytes  File Size  =       1692 *
+*Baskets :        4 : Basket Size=      32000 bytes  Compression=  69.39     *
+*............................................................................*
+*Br   10 :lg0       : Short_t FERS low-gain (signed) ADC det0 [int16]        *
+*Entries :      915 : Total  Size=     117911 bytes  File Size  =      85423 *
+*Baskets :        4 : Basket Size=      32000 bytes  Compression=   1.37     *
+*............................................................................*
+*Br   11 :hg0       : Short_t FERS high-gain (signed) ADC det0 [int16]       *
+*Entries :      915 : Total  Size=     117912 bytes  File Size  =      75650 *
+*Baskets :        4 : Basket Size=      32000 bytes  Compression=   1.55     *
+*............................................................................*
+*Br   12 :lg1       : Short_t FERS low-gain (signed) ADC det1 [int16]        *
+*Entries :      915 : Total  Size=     117911 bytes  File Size  =      85570 *
+*Baskets :        4 : Basket Size=      32000 bytes  Compression=   1.37     *
+*............................................................................*
+*Br   13 :hg1       : Short_t FERS high-gain (signed) ADC det1 [int16]       *
+*Entries :      915 : Total  Size=     117912 bytes  File Size  =      70891 *
+*Baskets :        4 : Basket Size=      32000 bytes  Compression=   1.66     *
+*............................................................................*
+*Br   14 :clg0      : Double_t Calibrated LG charge det0 [pC]                *
+*Entries :      915 : Total  Size=     470182 bytes  File Size  =     425848 *
+*Baskets :       15 : Basket Size=      32000 bytes  Compression=   1.10     *
+*............................................................................*
+*Br   15 :chg0      : Double_t Calibrated HG charge det0 [pC]                *
+*Entries :      915 : Total  Size=     470182 bytes  File Size  =     333833 *
+*Baskets :       15 : Basket Size=      32000 bytes  Compression=   1.41     *
+*............................................................................*
+*Br   16 :clg1      : Double_t Calibrated LG charge det1 [pC]                *
+*Entries :      915 : Total  Size=     470182 bytes  File Size  =     421559 *
+*Baskets :       15 : Basket Size=      32000 bytes  Compression=   1.11     *
+*............................................................................*
+*Br   17 :chg1      : Double_t Calibrated HG charge det1 [pC]                *
+*Entries :      915 : Total  Size=     470182 bytes  File Size  =     314748 *
+*Baskets :       15 : Basket Size=      32000 bytes  Compression=   1.49     *
+*............................................................................*
+*Br   18 :time      : Double_t Event posix digitizer timestamp               *
+*Entries :      915 : Total  Size=       7905 bytes  File Size  =        136 *
+*Baskets :        1 : Basket Size=      32000 bytes  Compression=  54.35     *
+*............................................................................*
+root [3] FERS->GetBranch("lg0")->GetTitle()
+(const char *) "FERS low-gain (signed) ADC det0 [int16]"
+root [4] FERS->GetBranch("clg0")->GetTitle()
+(const char *) "Calibrated LG charge det0 [pC]"
+root [5] 
+```
+
 
 
 ## Features
@@ -156,12 +273,16 @@ By default, FERS data is saved into a unsigned int and A5202 subtracts factory p
 
 ## Usage
 
-Run the script with the default settings `python fers.py`.
-<!-- Input/output paths can be personalized
+Run the script with the default settings `python fers.py`. Input/output paths can be personalized
 ```
-python fers.py <inputTXTdir> <outputROOTdir>
+python fers.py <inputTXTdir> <outputROOTdir> <dumpCache> <rootOutputFormat>
 ```
--->
+Where you have:
+1. `<inputTXTdir>` The input directory where to look for Run#_Info.txt/Run#_list.txt files. Please make sure there is a final '**/** ' at the end of the path, e.g. '/home/user/rawData/'
+2. `<outputROOTdir>` The output directory where to save the ROOT files. Please make sure there is a final '**/** ' at the end of the path, e.g. '/home/user/ROOTdata/'
+3. `<dumpCache>` (optional) If set to 0, the cache file is not saved and the conversion starts from scratch all the time (e.g. converts all the files in the directory). If set to 1, the list of files already converted is stored into a cache file and used the next time the script is called. Default is 0 *no cache*.
+4. `<rootOutputFormat>` (optional) If set to 0, the ROOT file is saved in the default structure (see Section ROOT structure). If set to 1, the ROOT file is saved in the vector structure (see Section ROOT structure). Default is 1 *vector*.
+
 When all the files in the input directory are converted, the script waits for the next acquisition to close. The script can be interrupted by pressing `Ctrl+C`. A cache file is saved in order to keep track of files that were already converted.
 <!--
 This is useful when the script is run in online mode, and can be disabled by setting `cache=False` in the `fers.py` script or by explicitely setting cache to False in the command line:
