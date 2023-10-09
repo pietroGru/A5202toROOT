@@ -188,14 +188,13 @@ def convertLoop():
     logging.info("Starting main loop")
     while True:
         # Handle SIGTERM interrupt in case the signal is called during ROOT file writing
-        if exitCall:
-            return
+        if exitCall: break
         
         # Get the list of files in the directory
         runList_new = glob.glob(a5202dataDir+"Run*_list.txt")
-        runList_new.sort()  # Sort not striclty needed here
+        runList_new = sorted(runList_new, key=lambda x: int(x[x.rfind('Run')+3:x.rfind('_')]))  # Sort not striclty needed here
         infoList = glob.glob(a5202dataDir+"Run*_Info.txt")
-        infoList.sort()     # Sort not striclty needed here
+        infoList = sorted(infoList, key=lambda x: int(x[x.rfind('Run')+3:x.rfind('_')]))     # Sort not striclty needed here
         # Loop over the list of Run*_list file in the dir,
         # compare with the previously processed ROOT and eventually
         # process any new file        
@@ -209,10 +208,14 @@ def convertLoop():
                 if (_infoFilename(item) in infoList):
                     writingROOT = True
                     aux_firstPrint = True
-
-                    logging.info(f"Run {_extractFilename(item)} closed. Converting to ROOT...")
-                    # This is a new file, let's convert to ROOT format
-                    makeROOT(item, rfoutFormat)
+                    
+                    if exists(item.replace('.txt', '.root').replace(a5202dataDir, outputROOTdirectory)):
+                        logging.warning(f"Run {_extractFilename(item)} already converted. Skipping...")
+                    else:
+                        logging.info(f"Run {_extractFilename(item)} closed. Converting to ROOT...")
+                        # This is a new file, let's convert to ROOT format
+                        makeROOT(item, rfoutFormat)
+                        
                     # Add the file to the list
                     procTXT.append(item)
                     txtProcessedSession.append(item)
