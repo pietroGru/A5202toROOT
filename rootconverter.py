@@ -19,7 +19,7 @@ class rootconverter():
     # rootconverter logger
     logging = create_logger("rootconverter")
     
-    def __init__(self, path, outputROOTdirectory, calPath="/home/pietro/work/CLEAR_March/FERS/TB4-192_FERS_analysis/calibrations/CERN_Vesper_4_withPedestals.root", rfileModeVector = True) -> None:
+    def __init__(self, path, outputROOTdirectory, calPath="/home/pietro/work/CLEAR_March/data/fers/calibrations/CERN_Vesper_4_withPedestals.root", rfileModeVector = True) -> None:
         """
         FERS ASCII (list + info) to ROOT converter class 
         
@@ -400,7 +400,7 @@ class rootconverter():
                 maskd0 = mask & mask_det0
                 maskd1 = mask & mask_det1
 
-                if np.max(maskd0) == False or np.max(maskd1) == False:
+                if np.max(maskd0) == False or np.max(maskd1) == False or (np.sum(mask) != 128):
                     # Handle cases where either you don't have both card data or 
                     # the data from different boards for this event is not matched (you have only one)
                     brokenEvent += 1
@@ -421,6 +421,7 @@ class rootconverter():
                 clg1 = lg1 / self.multLG[1, :] + self.pedeLG[1, :] 
                 chg1 = hg1 / self.multHG[1, :] + self.pedeHG[1, :]
                 timestamp = self.buffer['timestamp'][maskd0][0]
+                
                 
                 if self.rfileModeVector:
                     self.rfile.FERS_fill(
@@ -498,6 +499,6 @@ if __name__=="__main__":
     # rdataStruct_FERS logger
     testLogger = create_logger("rootconverter")
     testLogger.info("Test function for the class rootconverter")
-    test = rootconverter("/home/pietro/work/CLEAR_March/FERS/TB4-192_FERS_analysis/processed_uncal/05oct23/txt/Run343_list.txt", "/home/pietro/work/CLEAR_March/FERS/Janus_3.0.3/sample/", rfileModeVector=True)
+    test = rootconverter("/home/pietro/work/CLEAR_March/FERS/Janus_3.0.3/sample/Run101_list.txt", "/home/pietro/work/CLEAR_March/FERS/Janus_3.0.3/sample/", rfileModeVector=False)
     test.convert()
     testLogger.info("Goodbye")
