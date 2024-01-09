@@ -19,7 +19,7 @@ class rootconverter():
     # rootconverter logger
     logging = create_logger("rootconverter")
     
-    def __init__(self, path, outputROOTdirectory, calPath="data/fers/calibrations/CERN_Vesper_4_wPed.root", rfileModeVector = True) -> None:
+    def __init__(self, path, outputROOTdirectory, calPath="data/CERN_Vesper_4_wPed.root", rfileModeVector = True) -> None:
         """
         FERS ASCII (list + info) to ROOT converter class 
         
