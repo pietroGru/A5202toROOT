@@ -30,14 +30,14 @@ procROOTList = "runList.dat"
 # List of ROOT files processed in this session
 txtProcessedSession = []
 # Path where FERS data files are located 
-a5202dataDir = "./"
+a5202dataDir = "/home/pietro/work/CLEAR_Vesper/mountpoint/"
 # Path where output ROOT files are located
-outputROOTdirectory = "./"
+outputROOTdirectory = "/home/pietro/work/CLEAR_Vesper/FERS/processed/230620/"
 
 exitCall = False                # Boolean signalling exit interrupt call
 writingROOT = False             # ROOT writing status
 dumpCacheRun = False            # Cache dump mode (True = dump cache, False = do not dump cache)
-rfoutFormat = True              # ROOT file mode (True = vector, False = tree)
+rfoutFormat = False              # ROOT file mode (True = vector, False = tree)
 
 
 ##############################################################

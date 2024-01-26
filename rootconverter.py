@@ -418,7 +418,7 @@ class rootconverter():
                 hg1 = self.buffer['HG'][maskd1]
                 clg0 = lg0 / self.multLG[0, :] + self.pedeLG[0, :]
                 chg0 = hg0 / self.multHG[0, :] + self.pedeHG[0, :]
-                clg1 = lg1 / self.multLG[1, :] + self.pedeLG[1, :] 
+                clg1 = lg1 / self.multLG[1, :] + self.pedeLG[1, :]
                 chg1 = hg1 / self.multHG[1, :] + self.pedeHG[1, :]
                 timestamp = self.buffer['timestamp'][maskd0][0]
                 
